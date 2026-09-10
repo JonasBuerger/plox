@@ -1,0 +1,43 @@
+{
+  "name": "plox/plox",
+  "description": "lox language interpreter",
+  "type": "project",
+  "minimum-stability": "stable",
+  "prefer-stable": true,
+  "require": {
+    "php": ">=8.5",
+    "ext-json": "*",
+    "ext-mbstring": "*",
+    "ext-fileinfo": "*"
+  },
+  "config": {
+    "cache-dir": "./var/cache/composer",
+    "sort-packages": true,
+    "policy": {
+      "advisories": {
+        "ignore-severity": [
+          "low",
+          "medium"
+        ],
+        "ignore-id": {}
+      }
+    }
+  },
+  "scripts": {
+    "auto-scripts": {
+    },
+    "post-install-cmd": [
+      "@auto-scripts"
+    ],
+    "post-update-cmd": [
+      "@auto-scripts"
+    ]
+  },
+  "require-dev": {
+    "ext-xdebug": "*",
+    "phpstan/phpstan": "^2.2",
+    "friendsofphp/php-cs-fixer": "^3.95",
+    "rector/rector": "^2.6",
+    "phpunit/phpunit": "^13.3"
+  }
+}
