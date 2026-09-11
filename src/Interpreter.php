@@ -5,32 +5,44 @@ namespace Plox;
 
 final class Interpreter
 {
-    public function __construct(private string $projectDir)
-    {
-    }
+    public static bool $hadError = false;
 
-    public function runPrompt(): void
+    public static function runPrompt(): int
     {
         $stdin = fopen('php://stdin', 'r');
         for (; ;) {
             echo '> ';
             $line = trim(fgets($stdin));
             if ($line === '') break;
-            $this->run($line);
+            static::run($line);
+            static::$hadError = false;
         }
+        return ExitCode::SUCCESS->value;
     }
 
-    public function runFile(string $path): void
+    public static function runFile(string $path): int
     {
-        $this->run(file_get_contents($path));
+        static::run(file_get_contents($path));
+        return static::$hadError ? ExitCode::EX_SOFTWARE->value : ExitCode::SUCCESS->value;
     }
 
-    private function run(string $code): void
+    private static function run(string $code): void
     {
         $scanner = new Scanner($code);
         foreach ($scanner->scanTokens() as $token) {
             echo $token;
         }
         echo PHP_EOL;
+    }
+
+    public static function error(int $line, string $message): void
+    {
+        static::report($line, "", $message);
+    }
+
+    private static function report(int $line, string $where, string $message): void
+    {
+        echo '[line', $line, '] Error', $where, ': ', $message, PHP_EOL;
+        static::$hadError = true;
     }
 }

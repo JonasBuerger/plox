@@ -4,18 +4,15 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 return static function (array $args, string $projectDir) {
-    if(count($args) > 1){
-        echo 'Usage: bin/run [filename]',PHP_EOL;
+    if (count($args) > 1) {
+        echo 'Usage: bin/run [filename]', PHP_EOL;
         return \Plox\ExitCode::EX_USAGE->value;
-    }else if($args === []){
-        $interpreter = new \Plox\Interpreter($projectDir);
-        $interpreter->runPrompt();
-    }else if(!file_exists($args[0])){
+    } else if ($args === []) {
+        return \Plox\Interpreter::runPrompt();
+    } else if (!file_exists($args[0])) {
         printf('File "%s" not found.', $args[0]);
         return \Plox\ExitCode::EX_NOINPUT->value;
-    }else{
-        $interpreter = new \Plox\Interpreter($projectDir);
-        $interpreter->runFile($args[0]);
+    } else {
+        return \Plox\Interpreter::runFile($args[0]);
     }
-    return \Plox\ExitCode::SUCCESS->value;
 };
