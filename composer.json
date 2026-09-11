@@ -10,6 +10,11 @@
     "ext-mbstring": "*",
     "ext-fileinfo": "*"
   },
+  "autoload": {
+    "psr-4": {
+      "Plox\\": "src/"
+    }
+  },
   "config": {
     "cache-dir": "./var/cache/composer",
     "sort-packages": true,
