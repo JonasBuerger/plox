@@ -27,6 +27,10 @@ final class Interpreter
 
     private function run(string $code): void
     {
-        echo 'Hello, World!', PHP_EOL;
+        $scanner = new Scanner($code);
+        foreach ($scanner->scanTokens() as $token) {
+            echo $token;
+        }
+        echo PHP_EOL;
     }
 }
