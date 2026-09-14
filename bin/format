@@ -4,14 +4,18 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 return static function (array $args, string $projectDir):int {
+    $quiet = false;
+    if(in_array('--quiet',$args)){
+        $quiet = true;
+    }
     if(!is_executable($projectDir.'/vendor/bin/php-cs-fixer') || ! is_executable($projectDir.'/vendor/bin/rector')){
         echo 'rector or php-cs-fixer are missing, run: composer install', PHP_EOL;
         return \Plox\ExitCode::EX_USAGE->value;
     }
-    passthru($projectDir.'/vendor/bin/php-cs-fixer fix', $exitCode);
+    passthru($projectDir.'/vendor/bin/php-cs-fixer fix' . ($quiet ? ' --quiet':''), $exitCode);
     if($exitCode !== \Plox\ExitCode::SUCCESS->value) {
         return $exitCode;
     }
-    passthru($projectDir.'/vendor/bin/rector', $exitCode);
+    passthru($projectDir.'/vendor/bin/rector'. ($quiet ? ' --no-progress-bar':''), $exitCode);
     return $exitCode;
 };

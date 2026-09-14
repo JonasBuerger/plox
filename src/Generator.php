@@ -14,7 +14,7 @@ class Generator
     private static array $astNodes = [
         'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
         'Grouping' => ['expression' => Expression::class],
-        'Literal' => ['value' => 'int|float|string|null'],
+        'Literal' => ['value' => 'bool|int|float|string|null'],
         'Unary' => ['operator' => Token::class, 'right' => Expression::class],
     ];
 

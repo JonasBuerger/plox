@@ -9,6 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
+use Plox\Ast\ExpressionVisitor;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -33,7 +34,7 @@ final class VisitorPrinterTest extends TestCase
     }
 
     /**
-     * @param class-string $printerClass
+     * @param class-string<ExpressionVisitor<string>> $printerClass
      */
     #[DataProvider('providePrintVisitors')]
     public function testPrintAst(string $printerClass, string $example1, string $example2): void

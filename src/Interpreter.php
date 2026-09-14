@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Plox;
 
+use Plox\Ast\Visitor\AstPrinter;
+
 final class Interpreter
 {
     public static bool $hadError = false;
@@ -34,15 +36,17 @@ final class Interpreter
     private static function run(string $code): void
     {
         $scanner = new Scanner($code);
-        foreach ($scanner->scanTokens() as $token) {
-            echo $token;
-        }
-        echo PHP_EOL;
+        $parser = new Parser($scanner->scanTokens());
+        echo $parser->parse()?->accept(new AstPrinter()), PHP_EOL;
     }
 
-    public static function error(int $line, string $message): void
+    public static function error(Token $token, string $message): void
     {
-        self::report($line, '', $message);
+        if ($token->type == TokenType::EOF) {
+            self::report($token->line, ' at end', $message);
+        } else {
+            self::report($token->line, " at '" . $token->lexeme . "'", $message);
+        }
     }
 
     private static function report(int $line, string $where, string $message): void
