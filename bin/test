@@ -4,6 +4,14 @@
 require_once dirname(__DIR__) . '/bootstrap.php';
 
 return static function (array $args, string $projectDir):int {
-    echo 'Hello, World!', PHP_EOL;
-    return 0;
+    if ($args !== []) {
+        echo 'Usage: bin/test', PHP_EOL;
+        return \Plox\ExitCode::EX_USAGE->value;
+    } else if (!is_executable($projectDir.'/vendor/bin/phpunit')) {
+        echo 'phpunit is missing, run: composer install', PHP_EOL;
+        return \Plox\ExitCode::EX_USAGE->value;
+    } else {
+        passthru($projectDir.'/vendor/bin/phpunit',$exitCode);
+        return $exitCode;
+    }
 };

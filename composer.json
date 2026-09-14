@@ -15,6 +15,11 @@
       "Plox\\": "src/"
     }
   },
+  "autoload-dev": {
+    "psr-4": {
+      "App\\Tests\\": "tests/"
+    }
+  },
   "config": {
     "cache-dir": "./var/cache/composer",
     "sort-packages": true,
