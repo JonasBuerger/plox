@@ -1,0 +1,16 @@
+#!/usr/bin/env php
+<?php
+
+require_once dirname(__DIR__) . '/bootstrap.php';
+
+return static function (array $args, string $projectDir):int {
+    if (count($args) > 1 || $args === []) {
+        echo 'Usage: bin/generate ast', PHP_EOL;
+        return \Plox\ExitCode::EX_USAGE->value;
+    } else if ($args[0] === 'ast') {
+        return \Plox\Generator::generateAstClasses($projectDir);
+    } else {
+        echo 'Usage: bin/generate ast', PHP_EOL;
+        return \Plox\ExitCode::EX_USAGE->value;
+    }
+};

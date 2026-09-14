@@ -8,10 +8,10 @@ return static function (array $args, string $projectDir):int {
         echo 'rector or php-cs-fixer are missing, run: composer install', PHP_EOL;
         return \Plox\ExitCode::EX_USAGE->value;
     }
-    passthru('vendor/bin/php-cs-fixer fix', $exitCode);
+    passthru($projectDir.'/vendor/bin/php-cs-fixer fix', $exitCode);
     if($exitCode !== \Plox\ExitCode::SUCCESS->value) {
         return $exitCode;
     }
-    passthru('vendor/bin/rector', $exitCode);
+    passthru($projectDir.'/vendor/bin/rector', $exitCode);
     return $exitCode;
 };
