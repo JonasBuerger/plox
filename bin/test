@@ -3,7 +3,7 @@
 
 require_once dirname(__DIR__) . '/bootstrap.php';
 
-return static function (array $args, string $projectDir) {
+return static function (array $args, string $projectDir):int {
     echo 'Hello, World!', PHP_EOL;
     return 0;
 };

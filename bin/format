@@ -1,0 +1,17 @@
+#!/usr/bin/env php
+<?php
+
+require_once dirname(__DIR__) . '/bootstrap.php';
+
+return static function (array $args, string $projectDir):int {
+    if(!is_executable($projectDir.'/vendor/bin/php-cs-fixer') || ! is_executable($projectDir.'/vendor/bin/rector')){
+        echo 'rector or php-cs-fixer are missing, run: composer install', PHP_EOL;
+        return \Plox\ExitCode::EX_USAGE->value;
+    }
+    passthru('vendor/bin/php-cs-fixer fix', $exitCode);
+    if($exitCode !== \Plox\ExitCode::SUCCESS->value) {
+        return $exitCode;
+    }
+    passthru('vendor/bin/rector', $exitCode);
+    return $exitCode;
+};

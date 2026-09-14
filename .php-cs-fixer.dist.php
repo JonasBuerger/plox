@@ -10,7 +10,7 @@ $finder = new Finder()
     ->exclude('vendor')
     ->exclude('tests/Support/_generated')
     ->exclude('tests/_output')
-    ->exclude('bin');
+;
 
 /**
  * @see https://cs.symfony.com/doc/rules/index.html
