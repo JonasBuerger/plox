@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Plox;
 
 class Grouping extends Expression
@@ -8,7 +10,6 @@ class Grouping extends Expression
         public Token $left,
         public Expression $inner,
         public Token $right,
-    )
-    {
+    ) {
     }
 }

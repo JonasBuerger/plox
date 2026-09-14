@@ -1,0 +1,20 @@
+parameters:
+  level: 6
+  treatPhpDocTypesAsCertain: false
+  exceptions:
+    implicitThrows: true
+    check:
+      tooWideThrowType: true
+  bootstrapFiles:
+    - vendor/autoload.php
+  excludePaths:
+    - tests/Support/_generated/*
+    - tests/Support/Helper/*
+    - tests/Support/Data/*
+    - tests/_output/*
+  paths:
+    - src/
+    - tests/
+
+includes:
+  - vendor/phpstan/phpstan/conf/bleedingEdge.neon

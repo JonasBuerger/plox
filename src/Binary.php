@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Plox;
 
 class Binary extends Expression
@@ -8,7 +10,6 @@ class Binary extends Expression
         public Expression $left,
         public Token $operator,
         public Expression $right,
-    )
-    {
+    ) {
     }
 }

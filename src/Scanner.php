@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types=1);
 
 namespace Plox;
@@ -47,7 +48,8 @@ class Scanner
             $this->start = $this->current;
             $this->scanToken();
         }
-        $this->tokens[] = new Token(TokenType::EOF, "", null, $this->line);
+        $this->tokens[] = new Token(TokenType::EOF, '', null, $this->line);
+
         return $this->tokens;
     }
 
@@ -116,7 +118,7 @@ class Scanner
                 if ($this->match('/')) {
                     // A comment goes until the end of the line.
                     while ($this->peek() !== PHP_EOL && !$this->isAtEnd()) {
-                        $this->current++;
+                        ++$this->current;
                     }
                 } else {
                     $this->addToken(TokenType::SLASH);
@@ -137,10 +139,10 @@ class Scanner
             default:
                 if (ctype_digit($c)) {
                     $this->number();
-                } else if ($this->isAlphaNumeric($c)) {
+                } elseif ($this->isAlphaNumeric($c)) {
                     $this->identifier();
                 } else {
-                    Interpreter::error($this->line, "Unexpected character.");
+                    Interpreter::error($this->line, 'Unexpected character.');
                 }
                 break;
         }
@@ -151,10 +153,11 @@ class Scanner
         if ($this->isAtEnd()) {
             return false;
         }
-        if (substr($this->source, $this->current, 1) != $expected) {
+        if (substr($this->source, $this->current, 1) !== $expected) {
             return false;
         }
-        $this->current++;
+        ++$this->current;
+
         return true;
     }
 
@@ -163,6 +166,7 @@ class Scanner
         if ($this->isAtEnd()) {
             return "\0";
         }
+
         return substr($this->source, $this->current, 1);
     }
 
@@ -171,6 +175,7 @@ class Scanner
         if ($this->current + 1 >= strlen($this->source)) {
             return '\0';
         }
+
         return substr($this->source, $this->current + 1, 1);
     }
 
@@ -178,30 +183,31 @@ class Scanner
     {
         while ($this->peek() !== '"' && !$this->isAtEnd()) {
             if ($this->peek() === "\n") {
-                $this->line++;
+                ++$this->line;
             }
-            $this->current++;
+            ++$this->current;
         }
         if ($this->isAtEnd()) {
             Interpreter::error($this->line, 'Unterminated string.');
+
             return;
         }
-        $this->current++;
-        $this->addToken(TokenType::STRING, substr($this->source, $this->start + 1, ($this->current - $this->start - 2)));
+        ++$this->current;
+        $this->addToken(TokenType::STRING, substr($this->source, $this->start + 1, $this->current - $this->start - 2));
     }
 
     private function number(): void
     {
         while (ctype_digit($this->peek())) {
-            $this->current++;
+            ++$this->current;
         }
         // Look for a fractional part.
-        if ($this->peek() == '.' && ctype_digit($this->peekNext())) {
+        if ($this->peek() === '.' && ctype_digit($this->peekNext())) {
             // Consume the "."
-            $this->current++;
+            ++$this->current;
 
             while (ctype_digit($this->peek())) {
-                $this->current++;
+                ++$this->current;
             }
         }
         $this->addToken(TokenType::NUMBER, floatval(substr($this->source, $this->start, $this->current - $this->start)));
@@ -210,7 +216,7 @@ class Scanner
     private function identifier(): void
     {
         while ($this->isAlphaNumeric($this->peek())) {
-            $this->current++;
+            ++$this->current;
         }
         $text = substr($this->source, $this->start, $this->current - $this->start);
         $this->addToken(self::$keywords[$text] ?? TokenType::IDENTIFIER);
@@ -220,6 +226,4 @@ class Scanner
     {
         return ctype_alnum($char) || $char === '_';
     }
-
-
 }
