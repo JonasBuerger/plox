@@ -16,17 +16,17 @@ use Plox\Ast\Node\Unary;
  */
 class AstPrinter implements ExpressionVisitor
 {
-    public function visitBinary(Binary $binary): mixed
+    public function visitBinary(Binary $binary): string
     {
         return $this->parenthesize($binary->operator->lexeme, $binary->left, $binary->right);
     }
 
-    public function visitGrouping(Grouping $grouping): mixed
+    public function visitGrouping(Grouping $grouping): string
     {
         return $this->parenthesize('group', $grouping->expression);
     }
 
-    public function visitLiteral(Literal $literal): mixed
+    public function visitLiteral(Literal $literal): string
     {
         return match (gettype($literal->value)) {
             'boolean' => $literal->value ? 'true' : 'false',
@@ -37,7 +37,7 @@ class AstPrinter implements ExpressionVisitor
         };
     }
 
-    public function visitUnary(Unary $unary): mixed
+    public function visitUnary(Unary $unary): string
     {
         return $this->parenthesize($unary->operator->lexeme, $unary->right);
     }

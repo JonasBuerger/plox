@@ -6,7 +6,7 @@ namespace Plox;
 
 use Plox\Ast\Visitor\AstPrinter;
 
-final class Interpreter
+final class Plox
 {
     public static bool $hadError = false;
 

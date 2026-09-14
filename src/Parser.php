@@ -128,7 +128,7 @@ final class Parser
 
     private function error(Token $token, string $message): ParserException
     {
-        Interpreter::error($token, $message);
+        Plox::error($token, $message);
 
         return new ParserException($this->peek() . ': ' . $message);
     }

@@ -8,11 +8,11 @@ return static function (array $args, string $projectDir):int {
         echo 'Usage: bin/run [filename]', PHP_EOL;
         return \Plox\ExitCode::EX_USAGE->value;
     } else if ($args === []) {
-        return \Plox\Interpreter::runPrompt();
+        return \Plox\Plox::runPrompt();
     } else if (!file_exists($args[0])) {
         printf('File "%s" not found.', $args[0]);
         return \Plox\ExitCode::EX_NOINPUT->value;
     } else {
-        return \Plox\Interpreter::runFile($args[0]);
+        return \Plox\Plox::runFile($args[0]);
     }
 };

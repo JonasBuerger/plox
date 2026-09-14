@@ -33,7 +33,7 @@ final class ParserTest extends TestCase
         yield 'Addition' => ['expression' => '1+2', 'expected' => '1 2 +'];
         yield 'Parenthesis' => ['expression' => '2*(3-1)', 'expected' => '2 3 1 - *'];
         yield 'Simple Precedence' => ['expression' => '2 * 3 - 1 / 5', 'expected' => '2 3 * 1 5 / -'];
-        yield 'Comparisons' => ['expression' => '"apple" == "orange" <= "pear" != "hat"', 'expected' => '"apple"·"orange"·"pear"·<=·==·"hat"·!='];
+        yield 'Comparisons' => ['expression' => '"apple" == "orange" <= "pear" != "hat"', 'expected' => '"apple" "orange" "pear" <= == "hat" !='];
     }
 
     #[DataProvider('provideExpressions')]
