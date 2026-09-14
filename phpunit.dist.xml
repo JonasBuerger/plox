@@ -9,7 +9,7 @@
          failOnWarning="true"
          failOnRisky="true"
          failOnPhpunitDeprecation="true"
-         cacheDirectory=".phpunit.cache"
+         cacheDirectory="var/cache/phpunit"
          executionOrder="depends,random"
          requireCoverageMetadata="true"
          beStrictAboutOutputDuringTests="true"
@@ -44,10 +44,4 @@
     </include>
 
   </source>
-
-  <coverage ignoreDeprecatedCodeUnits="true">
-    <report>
-      <html outputDirectory="tests/_output/html"/>
-    </report>
-  </coverage>
 </phpunit>

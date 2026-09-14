@@ -28,5 +28,5 @@ return new Config()
         'concat_space' => ['spacing' => 'one'],
         'echo_tag_syntax' => ['format' => 'short'],
     ])
-    ->setCacheFile(__DIR__ . '/.php-cs-fixer.cache')
+    ->setCacheFile(__DIR__ . 'var/cache/php-cs-fixer.cache')
     ->setFinder($finder);
