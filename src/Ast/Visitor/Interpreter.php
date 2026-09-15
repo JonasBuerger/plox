@@ -22,7 +22,7 @@ class Interpreter implements ExpressionVisitor
     {
         try {
             $value = $expression->accept($this);
-            echo strval($value),PHP_EOL;
+            echo $this->stringify($value), PHP_EOL;
         } catch (RuntimeException $e) {
             Plox::error($e->getToken(), $e->getMessage());
         }
@@ -40,9 +40,10 @@ class Interpreter implements ExpressionVisitor
                 return $left - $right;
             case TokenType::SLASH:
                 $this->checkNumberOperands($binary->operator, $left, $right);
-                if($right === 0.0){
-                    throw new RuntimeException($binary->operator,'Division by zero.');
+                if ($right === 0.0) {
+                    throw new RuntimeException($binary->operator, 'Division by zero.');
                 }
+
                 return $left / $right;
             case TokenType::STAR:
                 $this->checkNumberOperands($binary->operator, $left, $right);
@@ -119,5 +120,10 @@ class Interpreter implements ExpressionVisitor
             return;
         }
         throw new RuntimeException($operator, 'Operand must be a number.');
+    }
+
+    private function stringify(string|float|bool|null $value): string
+    {
+        return $value === null ? 'nil' : strval($value);
     }
 }

@@ -9,6 +9,7 @@ use Plox\Ast\Visitor\Interpreter;
 final class Plox
 {
     public static bool $hadError = false;
+    private static Interpreter $interpreter;
 
     public static function runPrompt(): int
     {
@@ -36,10 +37,15 @@ final class Plox
     private static function run(string $code): void
     {
         $scanner = new Scanner($code);
-        $parser = new Parser($scanner->scanTokens());
-        $ast = $parser->parse();
-        $interpreter = new Interpreter();
-        $interpreter->interpret($ast);
+        $tokens = $scanner->scanTokens();
+        if (!self::$hadError) {
+            $parser = new Parser($tokens);
+            $ast = $parser->parse();
+            if (!self::$hadError) {
+                self::$interpreter ??= new Interpreter();
+                self::$interpreter->interpret($ast);
+            }
+        }
     }
 
     public static function error(Token $token, string $message): void
