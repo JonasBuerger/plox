@@ -9,17 +9,9 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Plox\Ast\ExpressionVisitor;
-use Plox\Ast\Node\Binary;
-use Plox\Ast\Node\Grouping;
-use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Unary;
-use Plox\Ast\Visitor\AstPrinter;
 use Plox\Ast\Visitor\RPNPrinter;
 use Plox\Parser;
 use Plox\Scanner;
-use Plox\Token;
-use Plox\TokenType;
 
 /**
  * @internal
@@ -28,6 +20,9 @@ use Plox\TokenType;
 #[Small]
 final class ParserTest extends TestCase
 {
+    /**
+     * @return Generator<array{expression:string,expected:string}>
+     */
     public static function provideExpressions(): Generator
     {
         yield 'Addition' => ['expression' => '1+2', 'expected' => '1 2 +'];

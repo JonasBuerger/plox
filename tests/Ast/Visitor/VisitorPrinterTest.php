@@ -27,6 +27,9 @@ use Plox\TokenType;
 #[Small]
 final class VisitorPrinterTest extends TestCase
 {
+    /**
+     * @return Generator<array{printerClass:class-string<ExpressionVisitor<string>>,example1:string,example2:string}>
+     */
     public static function providePrintVisitors(): Generator
     {
         yield 'Ast' => ['printerClass' => AstPrinter::class, 'example1' => '(* (- 123) (group 45.67))', 'example2' => '(* (group (+ 1 2)) (group (- 4 3)))'];

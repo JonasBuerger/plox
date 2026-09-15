@@ -142,7 +142,7 @@ class Scanner
                 } elseif ($this->isAlphaNumeric($c)) {
                     $this->identifier();
                 } else {
-                    Plox::error($this->line, 'Unexpected character.');
+                    Plox::error(array_last($this->tokens), 'Unexpected character.');
                 }
                 break;
         }
@@ -188,7 +188,7 @@ class Scanner
             ++$this->current;
         }
         if ($this->isAtEnd()) {
-            Plox::error($this->line, 'Unterminated string.');
+            Plox::error(array_last($this->tokens), 'Unterminated string.');
 
             return;
         }

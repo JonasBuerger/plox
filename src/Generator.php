@@ -14,7 +14,7 @@ class Generator
     private static array $astNodes = [
         'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
         'Grouping' => ['expression' => Expression::class],
-        'Literal' => ['value' => 'bool|int|float|string|null'],
+        'Literal' => ['value' => 'string|float|bool|null'],
         'Unary' => ['operator' => Token::class, 'right' => Expression::class],
     ];
 
@@ -95,17 +95,9 @@ class Generator
             CONTENT;
         file_put_contents($projectDir . '/src/Ast/Expression.php', $content);
 
-        // Run Code Clean-up
-        if (is_executable($projectDir . '/vendor/bin/php-cs-fixer') && is_executable($projectDir . '/vendor/bin/rector')) {
-            exec($projectDir . '/vendor/bin/php-cs-fixer fix --quiet', result_code: $exitCode);
-            if ($exitCode !== ExitCode::SUCCESS->value) {
-                return $exitCode;
-            }
-            exec($projectDir . '/vendor/bin/rector --no-progress-bar', result_code: $exitCode);
-            if ($exitCode !== ExitCode::SUCCESS->value) {
-                return $exitCode;
-            }
-            exec($projectDir . '/vendor/bin/php-cs-fixer fix --quiet', result_code: $exitCode);
+        // Fix Code-Style
+        if (is_executable($projectDir . '/bin/format')) {
+            exec($projectDir . '/bin/format --quiet', result_code: $exitCode);
         }
 
         return $exitCode;

@@ -2,81 +2,120 @@
 
 namespace Plox\Ast\Visitor;
 
-use http\Exception\RuntimeException;
+use Plox\Ast\Expression;
 use Plox\Ast\ExpressionVisitor;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Unary;
 use Plox\Plox;
+use Plox\RuntimeException;
+use Plox\Token;
 use Plox\TokenType;
 
 /**
- * @template-implements ExpressionVisitor<bool|int|float|string|null>
+ * @template-implements ExpressionVisitor<string|float|bool|null>
  */
 class Interpreter implements ExpressionVisitor
 {
+    public function interpret(Expression $expression): void
+    {
+        try {
+            $value = $expression->accept($this);
+            echo strval($value),PHP_EOL;
+        } catch (RuntimeException $e) {
+            Plox::error($e->getToken(), $e->getMessage());
+        }
+    }
 
-    /**
-     * @inheritDoc
-     */
-    public function visitBinary(Binary $binary): bool|int|float|string|null
+    public function visitBinary(Binary $binary): string|float|bool|null
     {
         $left = $binary->left->accept($this);
         $right = $binary->right->accept($this);
-        return match ($binary->operator->type) {
-            TokenType::MINUS => floatval($left) - floatval($right),
-            TokenType::SLASH => floatval($left) / floatval($right),
-            TokenType::STAR => floatval($left) * floatval($right),
-            TokenType::PLUS => $this->plus($left, $right),
-            default => null,
-        };
+
+        switch ($binary->operator->type) {
+            case TokenType::MINUS:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left - $right;
+            case TokenType::SLASH:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left / $right;
+            case TokenType::STAR:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left * $right;
+            case TokenType::PLUS:
+                return $this->plus($binary->operator, $left, $right);
+            case TokenType::GREATER:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left > $right;
+            case TokenType::GREATER_EQUAL:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left >= $right;
+            case TokenType::LESS:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left < $right;
+            case TokenType::LESS_EQUAL:
+                $this->checkNumberOperands($binary->operator, $left, $right);
+
+                return $left <= $right;
+            case TokenType::BANG_EQUAL:
+                return $left !== $right;
+            case TokenType::EQUAL_EQUAL:
+                return $left === $right;
+            default:
+                throw new RuntimeException($binary->operator, 'Not implemented.');
+        }
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function visitGrouping(Grouping $grouping): bool|int|float|string|null
+    public function visitGrouping(Grouping $grouping): string|float|bool|null
     {
         return $grouping->expression->accept($this);
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function visitLiteral(Literal $literal): bool|int|float|string|null
+    public function visitLiteral(Literal $literal): string|float|bool|null
     {
         return $literal->value;
     }
 
-    /**
-     * @inheritDoc
-     */
-    public function visitUnary(Unary $unary): bool|int|float|string|null
+    public function visitUnary(Unary $unary): string|float|bool
     {
         $value = $unary->right->accept($this);
-        return match ($unary->operator->type) {
-            //Chapter 7: false and nil are falsey, everything else is truthy
-            TokenType::BANG => $value === false || $value === null,
-            TokenType::MINUS => $this->isNumber($value) ? -$value : null,
-            default => null,
-        };
+
+        switch ($unary->operator->type) {
+            case TokenType::BANG:
+                return $value === false || $value === null;
+            case TokenType::MINUS:
+                $this->checkNumberOperands($unary->operator, $value);
+
+                return -$value;
+            default:
+                throw new RuntimeException($unary->operator, 'Not implemented.');
+        }
     }
 
-    private function isNumber(bool|int|float|string|null $value): bool
+    private function plus(Token $operator, string|float|bool|null $left, string|float|bool|null $right): string|float
     {
-        return is_int($value) || is_float($value);
-    }
-
-
-    private function plus(bool|int|float|string|null $left, bool|int|float|string|null $right): float|string|null
-    {
-        if ($this->isNumber($left) && $this->isNumber($right)) {
-            return floatval($left) + floatval($right);
+        if (is_float($left) && is_float($right)) {
+            return $left + $right;
         }
         if (is_string($left) && is_string($right)) {
             return $left . $right;
         }
-        return null;
+
+        throw new RuntimeException($operator, 'Operands must be two numbers or two strings.');
+    }
+
+    private function checkNumberOperands(Token $operator, string|float|bool|null ...$operands): void
+    {
+        if (array_all($operands, fn (string|float|bool|null $value, $_key): bool => is_float($value))) {
+            return;
+        }
+        throw new RuntimeException($operator, 'Operand must be a number.');
     }
 }

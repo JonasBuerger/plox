@@ -10,7 +10,7 @@ use Plox\Ast\ExpressionVisitor;
 class Literal extends Expression
 {
     public function __construct(
-        public bool|int|float|string|null $value,
+        public string|float|bool|null $value,
     ) {
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Plox;
 
-use Plox\Ast\Visitor\AstPrinter;
+use Plox\Ast\Visitor\Interpreter;
 
 final class Plox
 {
@@ -37,7 +37,9 @@ final class Plox
     {
         $scanner = new Scanner($code);
         $parser = new Parser($scanner->scanTokens());
-        echo $parser->parse()?->accept(new AstPrinter()), PHP_EOL;
+        $ast = $parser->parse();
+        $interpreter = new Interpreter();
+        $interpreter->interpret($ast);
     }
 
     public static function error(Token $token, string $message): void
