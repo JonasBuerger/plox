@@ -19,6 +19,6 @@ class Binary extends Expression
 
     public function accept(ExpressionVisitor $visitor): mixed
     {
-        return $visitor->visitBinary($this);
+        return $visitor->visitBinaryExpression($this);
     }
 }

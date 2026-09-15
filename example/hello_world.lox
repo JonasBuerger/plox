@@ -1,2 +1,10 @@
 // Your first Lox program!
-print "Hello, world!";
+
+// Vars
+var hello = "Hello,";
+var world = " World!";
+print hello + world ;
+
+// Precedence
+print "1 - 2 * 3";
+print 1 - 2 * 3;

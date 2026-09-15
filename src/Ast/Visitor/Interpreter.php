@@ -2,12 +2,17 @@
 
 namespace Plox\Ast\Visitor;
 
-use Plox\Ast\Expression;
 use Plox\Ast\ExpressionVisitor;
 use Plox\Ast\Node\Binary;
+use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
+use Plox\Ast\Node\Printing;
 use Plox\Ast\Node\Unary;
+use Plox\Ast\Node\Variable;
+use Plox\Ast\Node\VarSt;
+use Plox\Ast\Statement;
+use Plox\Ast\StatementVisitor;
 use Plox\Plox;
 use Plox\RuntimeException;
 use Plox\Token;
@@ -15,20 +20,26 @@ use Plox\TokenType;
 
 /**
  * @template-implements ExpressionVisitor<string|float|bool|null>
+ * @template-implements StatementVisitor<void>
  */
-class Interpreter implements ExpressionVisitor
+class Interpreter implements ExpressionVisitor, StatementVisitor
 {
-    public function interpret(Expression $expression): void
+    private $globals = [];
+    /**
+     * @param list<Statement> $statements
+     */
+    public function interpret(array $statements): void
     {
         try {
-            $value = $expression->accept($this);
-            echo $this->stringify($value), PHP_EOL;
+            foreach ($statements as $statement) {
+                $statement->accept($this);
+            }
         } catch (RuntimeException $e) {
             Plox::error($e->getToken(), $e->getMessage());
         }
     }
 
-    public function visitBinary(Binary $binary): string|float|bool|null
+    public function visitBinaryExpression(Binary $binary): string|float|bool|null
     {
         $left = $binary->left->accept($this);
         $right = $binary->right->accept($this);
@@ -76,17 +87,17 @@ class Interpreter implements ExpressionVisitor
         }
     }
 
-    public function visitGrouping(Grouping $grouping): string|float|bool|null
+    public function visitGroupingExpression(Grouping $grouping): string|float|bool|null
     {
         return $grouping->expression->accept($this);
     }
 
-    public function visitLiteral(Literal $literal): string|float|bool|null
+    public function visitLiteralExpression(Literal $literal): string|float|bool|null
     {
         return $literal->value;
     }
 
-    public function visitUnary(Unary $unary): string|float|bool
+    public function visitUnaryExpression(Unary $unary): string|float|bool
     {
         $value = $unary->right->accept($this);
 
@@ -125,5 +136,27 @@ class Interpreter implements ExpressionVisitor
     private function stringify(string|float|bool|null $value): string
     {
         return $value === null ? 'nil' : strval($value);
+    }
+
+    public function visitExpressionStatement(Expression $expression): void
+    {
+        $expression->expression->accept($this);
+    }
+
+    public function visitPrintingStatement(Printing $printing): void
+    {
+        $value = $printing->expression->accept($this);
+        echo $this->stringify($value), PHP_EOL;
+    }
+
+    public function visitVariableExpression(Variable $variable): string|float|bool|null
+    {
+        return $this->globals[$variable->name->lexeme];
+    }
+
+    public function visitVarStStatement(VarSt $varst):void
+    {
+        $value = $varst->initializer->accept($this);
+        $this->globals[$varst->name->lexeme] = $value;
     }
 }

@@ -15,17 +15,17 @@ use Plox\Ast\Node\Unary;
  */
 class RPNPrinter implements ExpressionVisitor
 {
-    public function visitBinary(Binary $binary): mixed
+    public function visitBinaryExpression(Binary $binary): mixed
     {
         return $binary->left->accept($this) . ' ' . $binary->right->accept($this) . ' ' . $binary->operator->lexeme;
     }
 
-    public function visitGrouping(Grouping $grouping): mixed
+    public function visitGroupingExpression(Grouping $grouping): mixed
     {
         return $grouping->expression->accept($this);
     }
 
-    public function visitLiteral(Literal $literal): mixed
+    public function visitLiteralExpression(Literal $literal): mixed
     {
         return match (gettype($literal->value)) {
             'boolean' => $literal->value ? 'true' : 'false',
@@ -36,7 +36,7 @@ class RPNPrinter implements ExpressionVisitor
         };
     }
 
-    public function visitUnary(Unary $unary): mixed
+    public function visitUnaryExpression(Unary $unary): mixed
     {
         return $unary->right->accept($this) . ' #' . $unary->operator->lexeme;
     }

@@ -9,27 +9,55 @@ use Plox\Ast\Expression;
 class Generator
 {
     /**
-     * @var array<string, array<string, string>>
+     * @var array<string, array<string, array<string, string>>>
      */
     private static array $astNodes = [
-        'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
-        'Grouping' => ['expression' => Expression::class],
-        'Literal' => ['value' => 'string|float|bool|null'],
-        'Unary' => ['operator' => Token::class, 'right' => Expression::class],
+        'Expression' => [
+            'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
+            'Grouping' => ['expression' => Expression::class],
+            'Literal' => ['value' => 'string|float|bool|null'],
+            'Unary' => ['operator' => Token::class, 'right' => Expression::class],
+            'Variable' => ['name' => Token::class],
+        ],
+        'Statement' => [
+            'Expression' => ['expression' => Expression::class],
+            // print is a reserved keyword in PHP
+            'Printing' => ['expression' => Expression::class],
+            // var is a reserved keyword in PHP
+            'VarSt' => ['name' => Token::class, 'initializer' => Expression::class],
+        ],
     ];
 
     public static function generateAstClasses(string $projectDir): int
     {
         $exitCode = ExitCode::SUCCESS->value;
+
+        foreach (self::$astNodes as $root => $tree) {
+            self::defineAst($projectDir . '/src/Ast', $root, 'Plox\\Ast', $tree);
+        }
+
+        // Fix Code-Style
+        if (is_executable($projectDir . '/bin/format')) {
+            exec($projectDir . '/bin/format --quiet', result_code: $exitCode);
+        }
+
+        return $exitCode;
+    }
+
+    /**
+     * @param array<string, array<string, string>> $nodes
+     */
+    private static function defineAst(string $outputDir, string $baseClass, string $baseNamespace, array $nodes): void
+    {
         // Generate Ast Node Classes
-        foreach (self::$astNodes as $class => $node) {
+        foreach ($nodes as $class => $node) {
             $content = <<<CONTENT
                 <?php
                 declare(strict_types=1);
 
-                namespace Plox\\Ast\\Node;
+                namespace $baseNamespace\\Node;
 
-                class $class extends \\Plox\\Ast\\Expression
+                class $class extends \\$baseNamespace\\$baseClass
                 {
                     public function __construct(
 
@@ -44,13 +72,13 @@ class Generator
                     /**
                      * @inheritDoc
                      */
-                    public function accept(\\Plox\\Ast\\ExpressionVisitor \$visitor): mixed
+                    public function accept(\\$baseNamespace\\{$baseClass}Visitor \$visitor)
                     {
-                        return \$visitor->visit$class(\$this);
+                        return \$visitor->visit$class$baseClass(\$this);
                     }
                 }
                 CONTENT;
-            file_put_contents($projectDir . '/src/Ast/Node/' . $class . '.php', $content);
+            file_put_contents($outputDir . '/Node/' . $class . '.php', $content);
         }
 
         // Generate ExpressionVisitor Interface
@@ -59,47 +87,40 @@ class Generator
 
             declare(strict_types=1);
 
-            namespace Plox\Ast;
+            namespace $baseNamespace;
 
             /**
              * @template T
              */
-            interface ExpressionVisitor
+            interface {$baseClass}Visitor
             {
             CONTENT;
-        foreach (self::$astNodes as $class => $node) {
+        foreach ($nodes as $class => $node) {
             $content .= '/**' . PHP_EOL . '* @return T' . PHP_EOL . '*/' . PHP_EOL;
             $param = strtolower($class);
-            $content .= "public function visit$class(\\Plox\\Ast\\Node\\$class \$$param): mixed;" . PHP_EOL;
+            $content .= "public function visit$class$baseClass(\\$baseNamespace\\Node\\$class \$$param);" . PHP_EOL;
         }
         $content .= '}';
-        file_put_contents($projectDir . '/src/Ast/ExpressionVisitor.php', $content);
+        file_put_contents($outputDir . '/' . $baseClass . 'Visitor.php', $content);
 
         // Generate Expression Base Class
-        $content = <<<'CONTENT'
+        $content = <<<CONTENT
             <?php
 
             declare(strict_types=1);
 
-            namespace Plox\Ast;
+            namespace $baseNamespace;
 
-            abstract class Expression
+            abstract class {$baseClass}
             {
                 /**
                  * @template T
-                 * @param ExpressionVisitor<T> $visitor
+                 * @param {$baseClass}Visitor<T> \$visitor
                  * @return T
                  */
-                abstract public function accept(ExpressionVisitor $visitor): mixed;
+                abstract public function accept({$baseClass}Visitor \$visitor): mixed;
             }
             CONTENT;
-        file_put_contents($projectDir . '/src/Ast/Expression.php', $content);
-
-        // Fix Code-Style
-        if (is_executable($projectDir . '/bin/format')) {
-            exec($projectDir . '/bin/format --quiet', result_code: $exitCode);
-        }
-
-        return $exitCode;
+        file_put_contents($outputDir . '/' . $baseClass . '.php', $content);
     }
 }

@@ -8,6 +8,7 @@ use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Unary;
+use Plox\Ast\Node\Variable;
 
 /**
  * @template T
@@ -17,20 +18,25 @@ interface ExpressionVisitor
     /**
      * @return T
      */
-    public function visitBinary(Binary $binary): mixed;
+    public function visitBinaryExpression(Binary $binary);
 
     /**
      * @return T
      */
-    public function visitGrouping(Grouping $grouping): mixed;
+    public function visitGroupingExpression(Grouping $grouping);
 
     /**
      * @return T
      */
-    public function visitLiteral(Literal $literal): mixed;
+    public function visitLiteralExpression(Literal $literal);
 
     /**
      * @return T
      */
-    public function visitUnary(Unary $unary): mixed;
+    public function visitUnaryExpression(Unary $unary);
+
+    /**
+     * @return T
+     */
+    public function visitVariableExpression(Variable $variable);
 }

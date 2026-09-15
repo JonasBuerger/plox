@@ -36,6 +36,9 @@ enum TokenType
 
     // Keywords.
     case AND;
+    /**
+     * class is a reserved keyword in php and can not be used here.
+     */
     case TYPE_CLASS;
     case ELSE;
     case FALSE;

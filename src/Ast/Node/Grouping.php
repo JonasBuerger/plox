@@ -16,6 +16,6 @@ class Grouping extends Expression
 
     public function accept(ExpressionVisitor $visitor): mixed
     {
-        return $visitor->visitGrouping($this);
+        return $visitor->visitGroupingExpression($this);
     }
 }

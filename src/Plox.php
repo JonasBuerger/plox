@@ -40,10 +40,10 @@ final class Plox
         $tokens = $scanner->scanTokens();
         if (!self::$hadError) {
             $parser = new Parser($tokens);
-            $ast = $parser->parse();
+            $statements = $parser->parse();
             if (!self::$hadError) {
                 self::$interpreter ??= new Interpreter();
-                self::$interpreter->interpret($ast);
+                self::$interpreter->interpret($statements);
             }
         }
     }
@@ -59,7 +59,7 @@ final class Plox
 
     private static function report(int $line, string $where, string $message): void
     {
-        echo '[line', $line, '] Error', $where, ': ', $message, PHP_EOL;
+        echo '[line ', $line, '] Error', $where, ': ', $message, PHP_EOL;
         self::$hadError = true;
     }
 }

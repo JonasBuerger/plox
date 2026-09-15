@@ -16,6 +16,6 @@ class Literal extends Expression
 
     public function accept(ExpressionVisitor $visitor): mixed
     {
-        return $visitor->visitLiteral($this);
+        return $visitor->visitLiteralExpression($this);
     }
 }

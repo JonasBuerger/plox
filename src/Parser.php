@@ -8,7 +8,11 @@ use Plox\Ast\Expression;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
+use Plox\Ast\Node\Printing;
 use Plox\Ast\Node\Unary;
+use Plox\Ast\Node\Variable;
+use Plox\Ast\Node\VarSt;
+use Plox\Ast\Statement;
 
 final class Parser
 {
@@ -22,13 +26,20 @@ final class Parser
     ) {
     }
 
-    public function parse(): ?Expression
+    /**
+     * @return list<Statement>
+     */
+    public function parse(): array
     {
-        try {
-            return $this->expression();
-        } catch (ParserException) {
-            return null;
+        $statements = [];
+        while (!$this->isAtEnd()) {
+            $statement = $this->declaration();
+            if ($statement instanceof Statement) {
+                $statements[] = $statement;
+            }
         }
+
+        return $statements;
     }
 
     private function expression(): Expression
@@ -107,6 +118,9 @@ final class Parser
         if ($this->match(TokenType::NUMBER, TokenType::STRING)) {
             return new Literal($this->previous()->literal);
         }
+        if ($this->match(TokenType::IDENTIFIER)) {
+            return new Variable($this->previous());
+        }
         if ($this->match(TokenType::LEFT_PAREN)) {
             $expr = $this->expression();
             $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
@@ -116,12 +130,12 @@ final class Parser
         throw $this->error($this->peek(), 'Expression expected.');
     }
 
-    private function consume(TokenType $type, string $message): bool
+    private function consume(TokenType $type, string $message): Token
     {
         if ($this->check($type)) {
             ++$this->current;
 
-            return true;
+            return $this->previous();
         }
         throw $this->error($this->peek(), $message);
     }
@@ -191,5 +205,56 @@ final class Parser
     private function peek(): Token
     {
         return $this->tokens[$this->current];
+    }
+
+    private function statement(): Statement
+    {
+        return match (true) {
+            $this->match(TokenType::PRINT) => $this->printStatement(),
+            default => $this->expressionStatement(),
+        };
+    }
+
+    private function printStatement(): Printing
+    {
+        $value = $this->expression();
+        $this->consume(TokenType::SEMICOLON, "Expect ';' after value.");
+
+        return new Printing($value);
+    }
+
+    private function expressionStatement(): Ast\Node\Expression
+    {
+        $value = $this->expression();
+        $this->consume(TokenType::SEMICOLON, "Expect ';' after expression.");
+
+        return new Ast\Node\Expression($value);
+    }
+
+    private function declaration(): ?Statement
+    {
+        try {
+            if ($this->match(TokenType::VAR)) {
+                return $this->varDeclaration();
+            }
+
+            return $this->statement();
+        } catch (ParserException) {
+            $this->synchronize();
+
+            return null;
+        }
+    }
+
+    private function varDeclaration(): VarSt
+    {
+        $name = $this->consume(TokenType::IDENTIFIER, 'Expect variable name.');
+        $initializer = null;
+        if ($this->match(TokenType::EQUAL)) {
+            $initializer = $this->expression();
+        }
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
+
+        return new VarSt($name, $initializer);
     }
 }
