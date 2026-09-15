@@ -40,7 +40,9 @@ class Interpreter implements ExpressionVisitor
                 return $left - $right;
             case TokenType::SLASH:
                 $this->checkNumberOperands($binary->operator, $left, $right);
-
+                if($right === 0.0){
+                    throw new RuntimeException($binary->operator,'Division by zero.');
+                }
                 return $left / $right;
             case TokenType::STAR:
                 $this->checkNumberOperands($binary->operator, $left, $right);
