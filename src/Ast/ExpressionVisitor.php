@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Plox\Ast;
 
+use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
-use Plox\Ast\Node\Assign;
 
 /**
  * @template T

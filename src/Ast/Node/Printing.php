@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plox\Ast\Node;
 
-use Plox\Ast\Statement;
 use Plox\Ast\Expression;
+use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
 
 class Printing extends Statement

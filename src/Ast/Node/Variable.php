@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Plox\Ast\Node;
 
 use Plox\Ast\Expression;
-use Plox\Token;
 use Plox\Ast\ExpressionVisitor;
+use Plox\Token;
 
 class Variable extends Expression
 {

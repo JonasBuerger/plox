@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Plox\Ast;
 
+use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Printing;
 use Plox\Ast\Node\VarSt;
-use Plox\Ast\Node\Block;
 
 /**
  * @template T

@@ -18,12 +18,20 @@ return static function (array $args, string $projectDir): int {
             return $exitCode;
         }
         exec($projectDir . '/vendor/bin/rector --no-progress-bar', result_code: $exitCode);
-    } else {
-        passthru($projectDir . '/vendor/bin/php-cs-fixer fix' . ($quiet ? ' --quiet' : ''), $exitCode);
         if ($exitCode !== \Plox\ExitCode::SUCCESS->value) {
             return $exitCode;
         }
-        passthru($projectDir . '/vendor/bin/rector' . ($quiet ? ' --no-progress-bar' : ''), $exitCode);
+        exec($projectDir . '/vendor/bin/php-cs-fixer fix --quiet', result_code: $exitCode);
+    } else {
+        passthru($projectDir . '/vendor/bin/php-cs-fixer fix', $exitCode);
+        if ($exitCode !== \Plox\ExitCode::SUCCESS->value) {
+            return $exitCode;
+        }
+        passthru($projectDir . '/vendor/bin/rector', $exitCode);
+        if ($exitCode !== \Plox\ExitCode::SUCCESS->value) {
+            return $exitCode;
+        }
+        passthru($projectDir . '/vendor/bin/php-cs-fixer fix', $exitCode);
     }
     return $exitCode;
 };
