@@ -229,12 +229,15 @@ final class Parser
     {
         return match (true) {
             $this->match(TokenType::PRINT) => $this->printStatement(),
-            $this->match(TokenType::LEFT_BRACE) => $this->block(),
+            $this->match(TokenType::LEFT_BRACE) => new Block($this->block()),
             default => $this->expressionStatement(),
         };
     }
 
-    private function block(): Block
+    /**
+     * @return list<Statement>
+     */
+    private function block(): array
     {
         $statements = [];
         while (!$this->isAtEnd() && !$this->check(TokenType::RIGHT_BRACE)) {
@@ -246,7 +249,7 @@ final class Parser
 
         $this->consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
 
-        return new Block($statements);
+        return $statements;
     }
 
     private function printStatement(): Printing
