@@ -7,6 +7,7 @@ namespace Plox;
 use Plox\Ast\Expression;
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
+use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Printing;
@@ -228,8 +229,24 @@ final class Parser
     {
         return match (true) {
             $this->match(TokenType::PRINT) => $this->printStatement(),
+            $this->match(TokenType::LEFT_BRACE) => $this->block(),
             default => $this->expressionStatement(),
         };
+    }
+
+    private function block(): Block
+    {
+        $statements = [];
+        while (!$this->isAtEnd() && !$this->check(TokenType::RIGHT_BRACE)) {
+            $statement = $this->declaration();
+            if ($statement instanceof Statement) {
+                $statements[] = $statement;
+            }
+        }
+
+        $this->consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+
+        return new Block($statements);
     }
 
     private function printStatement(): Printing

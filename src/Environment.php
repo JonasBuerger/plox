@@ -28,7 +28,7 @@ final class Environment
             return $this->values[$name->lexeme];
         }
 
-        if ($this->enclosing instanceof \Plox\Environment) {
+        if ($this->enclosing instanceof Environment) {
             return $this->enclosing->get($name);
         }
 
@@ -50,10 +50,12 @@ final class Environment
     {
         if ($this->has($name->lexeme)) {
             $this->values[$name->lexeme] = $value;
+
             return;
         }
-        if ($this->enclosing instanceof \Plox\Environment) {
+        if ($this->enclosing instanceof Environment) {
             $this->enclosing->assign($name, $value);
+
             return;
         }
 

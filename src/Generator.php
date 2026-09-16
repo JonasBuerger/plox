@@ -26,6 +26,7 @@ class Generator
             'Printing' => ['expression' => Expression::class],
             // var is a reserved keyword in PHP
             'VarSt' => ['name' => Token::class, 'initializer' => Expression::class . '|null'],
+            'Block' => ['statements' => 'array'],
         ],
     ];
 

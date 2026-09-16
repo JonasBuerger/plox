@@ -6,9 +6,16 @@ var world = " World!";
 
 print hello + world ;
 
-world = " Earth!";
+//Scope
+{
+    var world = " Earth!";
+    hello = "Bye,";
+
+    print hello + world ;
+}
 
 print hello + world ;
+
 
 // Precedence
 print "1 - 2 * 3";

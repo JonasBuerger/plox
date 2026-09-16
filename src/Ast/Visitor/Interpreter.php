@@ -5,6 +5,7 @@ namespace Plox\Ast\Visitor;
 use Plox\Ast\ExpressionVisitor;
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
+use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -27,7 +28,7 @@ use Plox\TokenType;
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
     public function __construct(
-        private readonly Environment $environment = new Environment(),
+        private Environment $environment = new Environment(),
     ) {
     }
 
@@ -172,5 +173,15 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $this->environment->assign($assign->name, $value);
 
         return $value;
+    }
+
+    public function visitBlockStatement(Block $block): void
+    {
+        $outerEnvironment = $this->environment;
+        $this->environment = new Environment($outerEnvironment);
+        foreach ($block->statements as $statement) {
+            $statement->accept($this);
+        }
+        $this->environment = $outerEnvironment;
     }
 }
