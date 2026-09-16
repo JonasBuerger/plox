@@ -8,15 +8,17 @@ use Plox\Ast\Expression;
 use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
 
-class Printing extends Statement
+class PloxIf extends Statement
 {
     public function __construct(
-        public Expression $expression,
+        public Expression $condition,
+        public Statement $thenBranch,
+        public ?Statement $elseBranch,
     ) {
     }
 
     public function accept(StatementVisitor $visitor): mixed
     {
-        return $visitor->visitPrintingStatement($this);
+        return $visitor->visitPloxIfStatement($this);
     }
 }

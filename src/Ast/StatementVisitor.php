@@ -6,8 +6,9 @@ namespace Plox\Ast;
 
 use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
-use Plox\Ast\Node\Printing;
-use Plox\Ast\Node\VarSt;
+use Plox\Ast\Node\PloxIf;
+use Plox\Ast\Node\PloxPrint;
+use Plox\Ast\Node\PloxVar;
 
 /**
  * @template T
@@ -22,15 +23,20 @@ interface StatementVisitor
     /**
      * @return T
      */
-    public function visitPrintingStatement(Printing $printing);
+    public function visitPloxPrintStatement(PloxPrint $ploxPrint);
 
     /**
      * @return T
      */
-    public function visitVarStStatement(VarSt $varst);
+    public function visitPloxVarStatement(PloxVar $ploxVar);
 
     /**
      * @return T
      */
     public function visitBlockStatement(Block $block);
+
+    /**
+     * @return T
+     */
+    public function visitPloxIfStatement(PloxIf $ploxIf);
 }

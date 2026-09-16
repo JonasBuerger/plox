@@ -9,7 +9,7 @@ use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
 use Plox\Token;
 
-class VarSt extends Statement
+class PloxVar extends Statement
 {
     public function __construct(
         public Token $name,
@@ -19,6 +19,6 @@ class VarSt extends Statement
 
     public function accept(StatementVisitor $visitor): mixed
     {
-        return $visitor->visitVarStStatement($this);
+        return $visitor->visitPloxVarStatement($this);
     }
 }

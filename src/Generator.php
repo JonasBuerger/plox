@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plox;
 
 use Plox\Ast\Expression;
+use Plox\Ast\Statement;
 
 class Generator
 {
@@ -23,10 +24,12 @@ class Generator
         'Statement' => [
             'Expression' => ['expression' => Expression::class],
             // print is a reserved keyword in PHP
-            'Printing' => ['expression' => Expression::class],
+            'PloxPrint' => ['expression' => Expression::class],
             // var is a reserved keyword in PHP
-            'VarSt' => ['name' => Token::class, 'initializer' => Expression::class . '|null'],
+            'PloxVar' => ['name' => Token::class, 'initializer' => Expression::class . '|null'],
             'Block' => ['statements' => 'array'],
+            // if is a reserved keyword in PHP
+            'PloxIf' => ['condition' => Expression::class, 'thenBranch' => Statement::class, 'elseBranch' => Statement::class . '|null'],
         ],
     ];
 
@@ -99,7 +102,7 @@ class Generator
             CONTENT;
         foreach ($nodes as $class => $node) {
             $content .= '/**' . PHP_EOL . '* @return T' . PHP_EOL . '*/' . PHP_EOL;
-            $param = strtolower($class);
+            $param = lcfirst($class);
             $content .= "public function visit$class$baseClass(\\$baseNamespace\\Node\\$class \$$param);" . PHP_EOL;
         }
         $content .= '}';

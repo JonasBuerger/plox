@@ -9,10 +9,11 @@ use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Printing;
+use Plox\Ast\Node\PloxIf;
+use Plox\Ast\Node\PloxPrint;
+use Plox\Ast\Node\PloxVar;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
-use Plox\Ast\Node\VarSt;
 use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
 use Plox\Environment;
@@ -150,9 +151,9 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $expression->expression->accept($this);
     }
 
-    public function visitPrintingStatement(Printing $printing): void
+    public function visitPloxPrintStatement(PloxPrint $ploxPrint): void
     {
-        $value = $printing->expression->accept($this);
+        $value = $ploxPrint->expression->accept($this);
         echo $this->stringify($value), PHP_EOL;
     }
 
@@ -161,10 +162,10 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         return $this->environment->get($variable->name);
     }
 
-    public function visitVarStStatement(VarSt $varst): void
+    public function visitPloxVarStatement(PloxVar $ploxVar): void
     {
-        $value = $varst->initializer?->accept($this);
-        $this->environment->define($varst->name, $value);
+        $value = $ploxVar->initializer?->accept($this);
+        $this->environment->define($ploxVar->name, $value);
     }
 
     public function visitAssignExpression(Assign $assign): string|float|bool|null
@@ -183,5 +184,19 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             $statement->accept($this);
         }
         $this->environment = $outerEnvironment;
+    }
+
+    private function isTruthy($value): bool
+    {
+        return (bool) ($value ?? false);
+    }
+
+    public function visitPloxIfStatement(PloxIf $ploxIf): void
+    {
+        if ($this->isTruthy($ploxIf->condition->accept($this))) {
+            $ploxIf->thenBranch->accept($this);
+        } else {
+            $ploxIf->elseBranch?->accept($this);
+        }
     }
 }

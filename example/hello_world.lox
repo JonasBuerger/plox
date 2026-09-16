@@ -21,3 +21,10 @@ print hello + world ;
 print "1 - 2 * 3";
 var result = 1 - 2 * 3;
 print result;
+
+if("lala") {
+    print("lala");
+} else print("Unreachable");
+
+if (false) print("Unreachable");
+if (true) print("Reachable");

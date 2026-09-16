@@ -10,10 +10,11 @@ use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Printing;
+use Plox\Ast\Node\PloxIf;
+use Plox\Ast\Node\PloxPrint;
+use Plox\Ast\Node\PloxVar;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
-use Plox\Ast\Node\VarSt;
 use Plox\Ast\Statement;
 
 final class Parser
@@ -229,6 +230,7 @@ final class Parser
     {
         return match (true) {
             $this->match(TokenType::PRINT) => $this->printStatement(),
+            $this->match(TokenType::IF) => $this->ifStatement(),
             $this->match(TokenType::LEFT_BRACE) => new Block($this->block()),
             default => $this->expressionStatement(),
         };
@@ -252,12 +254,12 @@ final class Parser
         return $statements;
     }
 
-    private function printStatement(): Printing
+    private function printStatement(): PloxPrint
     {
         $value = $this->expression();
         $this->consume(TokenType::SEMICOLON, "Expect ';' after value.");
 
-        return new Printing($value);
+        return new PloxPrint($value);
     }
 
     private function expressionStatement(): Ast\Node\Expression
@@ -283,7 +285,7 @@ final class Parser
         }
     }
 
-    private function varDeclaration(): VarSt
+    private function varDeclaration(): PloxVar
     {
         $name = $this->consume(TokenType::IDENTIFIER, 'Expect variable name.');
         $initializer = null;
@@ -292,6 +294,20 @@ final class Parser
         }
         $this->consume(TokenType::SEMICOLON, "Expected ';' after variable declaration.");
 
-        return new VarSt($name, $initializer);
+        return new PloxVar($name, $initializer);
+    }
+
+    private function ifStatement(): PloxIf
+    {
+        $this->consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        $condition = $this->expression();
+        $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+        $thenBranch = $this->statement();
+        $elseBranch = null;
+        if ($this->match(TokenType::ELSE)) {
+            $elseBranch = $this->statement();
+        }
+
+        return new PloxIf($condition, $thenBranch, $elseBranch);
     }
 }
