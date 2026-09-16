@@ -13,7 +13,7 @@ class VarSt extends Statement
 {
     public function __construct(
         public Token $name,
-        public Expression $initializer,
+        public ?Expression $initializer,
     ) {
     }
 

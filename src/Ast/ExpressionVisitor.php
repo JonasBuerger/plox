@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Plox\Ast;
 
+use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -39,4 +40,9 @@ interface ExpressionVisitor
      * @return T
      */
     public function visitVariableExpression(Variable $variable);
+
+    /**
+     * @return T
+     */
+    public function visitAssignExpression(Assign $assign);
 }

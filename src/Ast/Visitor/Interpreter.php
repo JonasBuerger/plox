@@ -3,6 +3,7 @@
 namespace Plox\Ast\Visitor;
 
 use Plox\Ast\ExpressionVisitor;
+use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
@@ -13,6 +14,7 @@ use Plox\Ast\Node\Variable;
 use Plox\Ast\Node\VarSt;
 use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
+use Plox\Environment;
 use Plox\Plox;
 use Plox\RuntimeException;
 use Plox\Token;
@@ -24,7 +26,11 @@ use Plox\TokenType;
  */
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
-    private $globals = [];
+    public function __construct(
+        private readonly Environment $environment = new Environment(),
+    ) {
+    }
+
     /**
      * @param list<Statement> $statements
      */
@@ -151,12 +157,20 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitVariableExpression(Variable $variable): string|float|bool|null
     {
-        return $this->globals[$variable->name->lexeme];
+        return $this->environment->get($variable->name);
     }
 
-    public function visitVarStStatement(VarSt $varst):void
+    public function visitVarStStatement(VarSt $varst): void
     {
-        $value = $varst->initializer->accept($this);
-        $this->globals[$varst->name->lexeme] = $value;
+        $value = $varst->initializer?->accept($this);
+        $this->environment->define($varst->name, $value);
+    }
+
+    public function visitAssignExpression(Assign $assign): string|float|bool|null
+    {
+        $value = $assign->value->accept($this);
+        $this->environment->assign($assign->name, $value);
+
+        return $value;
     }
 }

@@ -3,8 +3,14 @@
 // Vars
 var hello = "Hello,";
 var world = " World!";
+
+print hello + world ;
+
+world = " Earth!";
+
 print hello + world ;
 
 // Precedence
 print "1 - 2 * 3";
-print 1 - 2 * 3;
+var result = 1 - 2 * 3;
+print result;

@@ -18,13 +18,14 @@ class Generator
             'Literal' => ['value' => 'string|float|bool|null'],
             'Unary' => ['operator' => Token::class, 'right' => Expression::class],
             'Variable' => ['name' => Token::class],
+            'Assign' => ['name' => Token::class, 'value' => Expression::class],
         ],
         'Statement' => [
             'Expression' => ['expression' => Expression::class],
             // print is a reserved keyword in PHP
             'Printing' => ['expression' => Expression::class],
             // var is a reserved keyword in PHP
-            'VarSt' => ['name' => Token::class, 'initializer' => Expression::class],
+            'VarSt' => ['name' => Token::class, 'initializer' => Expression::class . '|null'],
         ],
     ];
 

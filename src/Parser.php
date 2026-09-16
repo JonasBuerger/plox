@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plox;
 
 use Plox\Ast\Expression;
+use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -44,7 +45,23 @@ final class Parser
 
     private function expression(): Expression
     {
-        return $this->equality();
+        return $this->assignment();
+    }
+
+    private function assignment(): Expression
+    {
+        $expression = $this->equality();
+        if ($this->match(TokenType::EQUAL)) {
+            $equals = $this->previous();
+            $value = $this->assignment();
+            if ($expression instanceof Variable) {
+                return new Assign($expression->name, $value);
+            }
+
+            $this->error($equals, 'Invalid assignment target.');
+        }
+
+        return $expression;
     }
 
     private function equality(): Expression
