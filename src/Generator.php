@@ -20,6 +20,7 @@ class Generator
             'Unary' => ['operator' => Token::class, 'right' => Expression::class],
             'Variable' => ['name' => Token::class],
             'Assign' => ['name' => Token::class, 'value' => Expression::class],
+            'Logical' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
         ],
         'Statement' => [
             'Expression' => ['expression' => Expression::class],

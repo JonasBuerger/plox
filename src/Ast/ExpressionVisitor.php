@@ -8,6 +8,7 @@ use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
+use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
 
@@ -45,4 +46,9 @@ interface ExpressionVisitor
      * @return T
      */
     public function visitAssignExpression(Assign $assign);
+
+    /**
+     * @return T
+     */
+    public function visitLogicalExpression(Logical $logical);
 }

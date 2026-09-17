@@ -9,6 +9,7 @@ use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
+use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -198,5 +199,22 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         } else {
             $ploxIf->elseBranch?->accept($this);
         }
+    }
+
+    public function visitLogicalExpression(Logical $logical)
+    {
+        $left = $logical->left->accept($this);
+
+        if ($logical->operator->type === TokenType::OR) {
+            if ($this->isTruthy($left)) {
+                return $left;
+            }
+        } else {
+            if (!$this->isTruthy($left)) {
+                return $left;
+            }
+        }
+
+        return $logical->right->accept($this);
     }
 }

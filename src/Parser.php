@@ -10,6 +10,7 @@ use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
+use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -52,7 +53,7 @@ final class Parser
 
     private function assignment(): Expression
     {
-        $expression = $this->equality();
+        $expression = $this->logicOr();
         if ($this->match(TokenType::EQUAL)) {
             $equals = $this->previous();
             $value = $this->assignment();
@@ -64,6 +65,28 @@ final class Parser
         }
 
         return $expression;
+    }
+
+    private function logicOr(): Expression
+    {
+        $expr = $this->logicAnd();
+        while ($this->match(TokenType::OR)) {
+            $operator = $this->previous();
+            $expr = new Logical($expr, $operator, $this->logicAnd());
+        }
+
+        return $expr;
+    }
+
+    private function logicAnd(): Expression
+    {
+        $expr = $this->equality();
+        while ($this->match(TokenType::AND)) {
+            $operator = $this->previous();
+            $expr = new Logical($expr, $operator, $this->equality());
+        }
+
+        return $expr;
     }
 
     private function equality(): Expression
