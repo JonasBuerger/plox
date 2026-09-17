@@ -347,29 +347,38 @@ final class Parser
         return new PloxWhile($condition, $body);
     }
 
-    private function forStatement(): Block
+    private function forStatement(): Statement
     {
         $this->consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
-        $initializer = null;
-        if ($this->match(TokenType::VAR)) {
+        if ($this->match(TokenType::SEMICOLON)) {
+            $initializer = null;
+        } elseif ($this->match(TokenType::VAR)) {
             $initializer = $this->varDeclaration();
-        } elseif (!$this->match(TokenType::SEMICOLON)) {
+        } else {
             $initializer = $this->expressionStatement();
         }
         $condition = null;
-        if (!$this->match(TokenType::SEMICOLON)) {
+        if (!$this->check(TokenType::SEMICOLON)) {
             $condition = $this->expression();
-            $this->consume(TokenType::SEMICOLON, "Expected ';' after for condition.");
         }
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after for condition.");
         $increment = null;
-        if (!$this->match(TokenType::RIGHT_PAREN)) {
+        if (!$this->check(TokenType::RIGHT_PAREN)) {
             $increment = $this->expression();
         }
         $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+
         $body = $this->statement();
+        if ($increment instanceof Expression) {
+            $body = new Block([$body, new Ast\Node\Expression($increment)]);
+        }
+        $condition ??= new Literal(true);
 
-        $whileStatement = new PloxWhile($condition, new Block(array_filter([$body, $increment])));
+        $body = new PloxWhile($condition, $body);
+        if ($initializer !== null) {
+            $body = new Block([$initializer, $body]);
+        }
 
-        return new Block(array_filter([$initializer, $whileStatement]));
+        return $body;
     }
 }
