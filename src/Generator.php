@@ -31,6 +31,7 @@ class Generator
             'Block' => ['statements' => 'array'],
             // if is a reserved keyword in PHP
             'PloxIf' => ['condition' => Expression::class, 'thenBranch' => Statement::class, 'elseBranch' => Statement::class . '|null'],
+            'PloxWhile' => ['condition' => Expression::class, 'body' => Statement::class],
         ],
     ];
 
@@ -39,7 +40,7 @@ class Generator
         $exitCode = ExitCode::SUCCESS->value;
 
         foreach (self::$astNodes as $root => $tree) {
-            self::defineAst($projectDir . '/src/Ast', $root, 'Plox\\Ast', $tree);
+            self::defineAst($projectDir . '/src/Ast', $root, 'Plox', $tree);
         }
 
         // Fix Code-Style
@@ -61,15 +62,16 @@ class Generator
                 <?php
                 declare(strict_types=1);
 
-                namespace $baseNamespace\\Node;
+                namespace $baseNamespace\\Ast\\Node;
 
-                class $class extends \\$baseNamespace\\$baseClass
+                class $class extends \\$baseNamespace\\Ast\\$baseClass
                 {
                     public function __construct(
 
                 CONTENT;
             foreach ($node as $param => $type) {
-                $content .= 'public \\' . $type . ' $' . $param . ',' . PHP_EOL;
+                $type = str_replace($baseNamespace, '\\' . $baseNamespace, $type);
+                $content .= 'public ' . $type . ' $' . $param . ',' . PHP_EOL;
             }
             $content .= <<<CONTENT
                     ) {
@@ -78,7 +80,7 @@ class Generator
                     /**
                      * @inheritDoc
                      */
-                    public function accept(\\$baseNamespace\\{$baseClass}Visitor \$visitor)
+                    public function accept(\\$baseNamespace\\Ast\\{$baseClass}Visitor \$visitor)
                     {
                         return \$visitor->visit$class$baseClass(\$this);
                     }
@@ -93,7 +95,7 @@ class Generator
 
             declare(strict_types=1);
 
-            namespace $baseNamespace;
+            namespace $baseNamespace\\Ast;
 
             /**
              * @template T
@@ -104,7 +106,7 @@ class Generator
         foreach ($nodes as $class => $node) {
             $content .= '/**' . PHP_EOL . '* @return T' . PHP_EOL . '*/' . PHP_EOL;
             $param = lcfirst($class);
-            $content .= "public function visit$class$baseClass(\\$baseNamespace\\Node\\$class \$$param);" . PHP_EOL;
+            $content .= "public function visit$class$baseClass(\\$baseNamespace\\Ast\\Node\\$class \$$param);" . PHP_EOL;
         }
         $content .= '}';
         file_put_contents($outputDir . '/' . $baseClass . 'Visitor.php', $content);
@@ -115,7 +117,7 @@ class Generator
 
             declare(strict_types=1);
 
-            namespace $baseNamespace;
+            namespace {$baseNamespace}\Ast;
 
             abstract class {$baseClass}
             {

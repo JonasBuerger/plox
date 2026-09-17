@@ -13,6 +13,7 @@ use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
+use Plox\Ast\Node\PloxWhile;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
 use Plox\Ast\Statement;
@@ -198,6 +199,13 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             $ploxIf->thenBranch->accept($this);
         } else {
             $ploxIf->elseBranch?->accept($this);
+        }
+    }
+
+    public function visitPloxWhileStatement(PloxWhile $ploxWhile): void
+    {
+        while ($this->isTruthy($ploxWhile->condition->accept($this))) {
+            $ploxWhile->body->accept($this);
         }
     }
 

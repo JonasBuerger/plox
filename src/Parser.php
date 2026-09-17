@@ -14,6 +14,7 @@ use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
+use Plox\Ast\Node\PloxWhile;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
 use Plox\Ast\Statement;
@@ -254,6 +255,8 @@ final class Parser
         return match (true) {
             $this->match(TokenType::PRINT) => $this->printStatement(),
             $this->match(TokenType::IF) => $this->ifStatement(),
+            $this->match(TokenType::WHILE) => $this->whileStatement(),
+            $this->match(TokenType::FOR) => $this->forStatement(),
             $this->match(TokenType::LEFT_BRACE) => new Block($this->block()),
             default => $this->expressionStatement(),
         };
@@ -332,5 +335,41 @@ final class Parser
         }
 
         return new PloxIf($condition, $thenBranch, $elseBranch);
+    }
+
+    private function whileStatement(): PloxWhile
+    {
+        $this->consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        $condition = $this->expression();
+        $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+        $body = $this->statement();
+
+        return new PloxWhile($condition, $body);
+    }
+
+    private function forStatement(): Block
+    {
+        $this->consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+        $initializer = null;
+        if ($this->match(TokenType::VAR)) {
+            $initializer = $this->varDeclaration();
+        } elseif (!$this->match(TokenType::SEMICOLON)) {
+            $initializer = $this->expressionStatement();
+        }
+        $condition = null;
+        if (!$this->match(TokenType::SEMICOLON)) {
+            $condition = $this->expression();
+            $this->consume(TokenType::SEMICOLON, "Expected ';' after for condition.");
+        }
+        $increment = null;
+        if (!$this->match(TokenType::RIGHT_PAREN)) {
+            $increment = $this->expression();
+        }
+        $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+        $body = $this->statement();
+
+        $whileStatement = new PloxWhile($condition, new Block(array_filter([$body, $increment])));
+
+        return new Block(array_filter([$initializer, $whileStatement]));
     }
 }

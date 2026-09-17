@@ -22,9 +22,25 @@ print "1 - 2 * 3";
 var result = 1 - 2 * 3;
 print result;
 
+// Conditional Statements
 if("lala") {
     print("lala");
 } else print("Unreachable");
 
 if (false) print("Unreachable");
 if (true) print("Reachable");
+
+// Logical Operators
+print(2 or "Unreachable");
+print("Unreachable" and "hi");
+
+// Loops
+var counter = 5;
+while (counter > 0) {
+    print(counter);
+    counter = counter - 1;
+}
+
+for(var i = 5;i>0;i = i-1){
+    print(i);
+}

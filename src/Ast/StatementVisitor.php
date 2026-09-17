@@ -9,6 +9,7 @@ use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
+use Plox\Ast\Node\PloxWhile;
 
 /**
  * @template T
@@ -39,4 +40,9 @@ interface StatementVisitor
      * @return T
      */
     public function visitPloxIfStatement(PloxIf $ploxIf);
+
+    /**
+     * @return T
+     */
+    public function visitPloxWhileStatement(PloxWhile $ploxWhile);
 }
