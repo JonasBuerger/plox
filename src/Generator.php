@@ -16,11 +16,12 @@ class Generator
         'Expression' => [
             'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
             'Grouping' => ['expression' => Expression::class],
-            'Literal' => ['value' => 'string|float|bool|null'],
+            'Literal' => ['value' => 'mixed'],
             'Unary' => ['operator' => Token::class, 'right' => Expression::class],
             'Variable' => ['name' => Token::class],
             'Assign' => ['name' => Token::class, 'value' => Expression::class],
             'Logical' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
+            'Call' => ['callee' => Expression::class, 'paren' => Token::class, 'arguments' => 'array'],
         ],
         'Statement' => [
             'Expression' => ['expression' => Expression::class],

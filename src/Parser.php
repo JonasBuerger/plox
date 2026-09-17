@@ -8,6 +8,7 @@ use Plox\Ast\Expression;
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Block;
+use Plox\Ast\Node\Call;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
@@ -145,8 +146,68 @@ final class Parser
             return new Unary($this->previous(), $this->unary());
         }
 
-        return $this->primary();
+        return $this->call();
     }
+
+    private function call(): Expression
+    {
+        $expression = $this->primary();
+
+        while (true) {
+            if ($this->match(TokenType::LEFT_PAREN)) {
+                $expression = $this->finishCall($expression);
+            } else {
+                break;
+            }
+        }
+
+        return $expression;
+    }
+
+    private function finishCall(Expression $callee): Call
+    {
+        $arguments = [];
+        if (!$this->check(TokenType::RIGHT_PAREN)) {
+            do {
+                if (count($arguments) >= 255) {
+                    $this->error($this->peek(), "Can't have more than 255 arguments.");
+                }
+                $arguments[] = $this->expression();
+            } while ($this->match(TokenType::COMMA));
+        }
+        $paren = $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+
+        return new Call($callee, $paren, $arguments);
+    }
+
+    //    private function call(): Expression
+    //    {
+    //        $expression = $this->primary();
+    //        if ($this->match(TokenType::LEFT_PAREN)) {
+    //            $arguments = [];
+    //            if (!$this->check(TokenType::RIGHT_PAREN)) {
+    //                $arguments = $this->arguments();
+    //            }
+    //            $this->consume(TokenType::RIGHT_PAREN, "Missing ')' after argument list.");
+    //
+    //            $expression = new Call($expression, $this->previous(), $arguments);
+    //        }
+    //
+    //        return $expression;
+    //    }
+    //
+    //    /**
+    //     * @return list<Ast\Node\Expression>
+    //     */
+    //    private function arguments(): array
+    //    {
+    //        $expressions = [$this->expression()];
+    //        while ($this->match(TokenType::COMMA)) {
+    //            $expressions[] = $this->expression();
+    //        }
+    //
+    //        return $expressions;
+    //    }
 
     private function primary(): Expression
     {

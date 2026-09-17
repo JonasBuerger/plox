@@ -4,13 +4,10 @@ declare(strict_types=1);
 
 namespace Plox;
 
-/**
- * @phpstan-type VariableTypes string|float|bool|null
- */
 final class Environment
 {
     /**
-     * @var array<string, VariableTypes>
+     * @var array<string, mixed>
      */
     private array $values = [];
 
@@ -19,9 +16,6 @@ final class Environment
     ) {
     }
 
-    /**
-     * @return VariableTypes
-     */
     public function get(Token $name): mixed
     {
         if ($this->has($name->lexeme)) {
@@ -35,17 +29,11 @@ final class Environment
         throw new RuntimeException($name, "Undefined variable '" . $name->lexeme . "'.");
     }
 
-    /**
-     * @param VariableTypes $value
-     */
-    public function define(Token $name, mixed $value): void
+    public function define(string $name, mixed $value): void
     {
-        $this->values[$name->lexeme] = $value;
+        $this->values[$name] = $value;
     }
 
-    /**
-     * @param VariableTypes $value
-     */
     public function assign(Token $name, mixed $value): void
     {
         if ($this->has($name->lexeme)) {

@@ -6,6 +6,7 @@ namespace Plox\Ast;
 
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
+use Plox\Ast\Node\Call;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
@@ -51,4 +52,9 @@ interface ExpressionVisitor
      * @return T
      */
     public function visitLogicalExpression(Logical $logical);
+
+    /**
+     * @return T
+     */
+    public function visitCallExpression(Call $call);
 }

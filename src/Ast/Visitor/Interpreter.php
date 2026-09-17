@@ -6,6 +6,7 @@ use Plox\Ast\ExpressionVisitor;
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Block;
+use Plox\Ast\Node\Call;
 use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -21,21 +22,44 @@ use Plox\Ast\Statement;
 use Plox\Ast\StatementVisitor;
 use Plox\Environment;
 use Plox\Plox;
+use Plox\PloxCallable;
 use Plox\RuntimeException;
 use Plox\Token;
 use Plox\TokenType;
 
 /**
- * @template-implements ExpressionVisitor<string|float|bool|null>
+ * @template-implements ExpressionVisitor<mixed>
  * @template-implements StatementVisitor<void>
  */
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
     private ?Token $breakTraversal = null;
+    public readonly Environment $globals;
+    private Environment $environment;
 
-    public function __construct(
-        private Environment $environment = new Environment(),
-    ) {
+    public function __construct()
+    {
+        $this->globals = new Environment();
+        $this->environment = new Environment($this->globals);
+
+        $this->globals->define('clock', new class implements PloxCallable
+        {
+
+            public function call(Interpreter $interpreter, array $arguments): mixed
+            {
+                return microtime(true);
+            }
+
+            public function arity(): int
+            {
+                return 0;
+            }
+
+            public function __toString(): string
+            {
+                return '<native fn>';
+            }
+        });
     }
 
     /**
@@ -55,7 +79,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitBinaryExpression(Binary $binary): string|float|bool|null
+    public function visitBinaryExpression(Binary $binary): mixed
     {
         $left = $this->evaluate($binary->left);
         $right = $this->evaluate($binary->right);
@@ -103,12 +127,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitGroupingExpression(Grouping $grouping): string|float|bool|null
+    public function visitGroupingExpression(Grouping $grouping): mixed
     {
         return $this->evaluate($grouping->expression);
     }
 
-    public function visitLiteralExpression(Literal $literal): string|float|bool|null
+    public function visitLiteralExpression(Literal $literal): mixed
     {
         return $literal->value;
     }
@@ -129,7 +153,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    private function plus(Token $operator, string|float|bool|null $left, string|float|bool|null $right): string|float
+    private function plus(Token $operator, mixed $left, mixed $right): string|float
     {
         if (is_float($left) && is_float($right)) {
             return $left + $right;
@@ -141,15 +165,15 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         throw new RuntimeException($operator, 'Operands must be two numbers or two strings.');
     }
 
-    private function checkNumberOperands(Token $operator, string|float|bool|null ...$operands): void
+    private function checkNumberOperands(Token $operator, mixed ...$operands): void
     {
-        if (array_all($operands, fn (string|float|bool|null $value, $_key): bool => is_float($value))) {
+        if (array_all($operands, fn (mixed $value, $_key): bool => is_float($value))) {
             return;
         }
         throw new RuntimeException($operator, 'Operand must be a number.');
     }
 
-    private function stringify(string|float|bool|null $value): string
+    private function stringify(mixed $value): string
     {
         return $value === null ? 'nil' : strval($value);
     }
@@ -165,7 +189,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         echo $this->stringify($value), PHP_EOL;
     }
 
-    public function visitVariableExpression(Variable $variable): string|float|bool|null
+    public function visitVariableExpression(Variable $variable): mixed
     {
         return $this->environment->get($variable->name);
     }
@@ -173,13 +197,13 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
     public function visitPloxVarStatement(PloxVar $ploxVar): void
     {
         $value = null;
-        if($ploxVar->initializer instanceof \Plox\Ast\Expression){
+        if ($ploxVar->initializer instanceof \Plox\Ast\Expression) {
             $value = $this->evaluate($ploxVar->initializer);
         }
-        $this->environment->define($ploxVar->name, $value);
+        $this->environment->define($ploxVar->name->lexeme, $value);
     }
 
-    public function visitAssignExpression(Assign $assign): string|float|bool|null
+    public function visitAssignExpression(Assign $assign): mixed
     {
         $value = $this->evaluate($assign->value);
         $this->environment->assign($assign->name, $value);
@@ -197,7 +221,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $this->environment = $outerEnvironment;
     }
 
-    private function isTruthy($value): bool
+    private function isTruthy(mixed $value): bool
     {
         return (bool) ($value ?? false);
     }
@@ -216,14 +240,14 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
     {
         while ($this->isTruthy($this->evaluate($ploxWhile->condition))) {
             $this->execute($ploxWhile->body);
-            if($this->breakTraversal instanceof Token){
+            if ($this->breakTraversal instanceof Token) {
                 break;
             }
         }
         $this->breakTraversal = null;
     }
 
-    public function visitLogicalExpression(Logical $logical): string|float|bool|null
+    public function visitLogicalExpression(Logical $logical): mixed
     {
         $left = $this->evaluate($logical->left);
 
@@ -253,8 +277,26 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $statement->accept($this);
     }
 
-    private function evaluate(\Plox\Ast\Expression $expression): string|float|bool|null
+    private function evaluate(\Plox\Ast\Expression $expression): mixed
     {
         return $expression->accept($this);
+    }
+
+    public function visitCallExpression(Call $call): mixed
+    {
+        $callee = $this->evaluate($call->callee);
+        $arguments = [];
+        foreach ($call->arguments as $argument) {
+            $arguments[] = $this->evaluate($argument);
+        }
+        if ($callee instanceof PloxCallable) {
+            $argumentCount = count($arguments);
+            if ($argumentCount !== $callee->arity()) {
+                throw new RuntimeException($call->paren, "Expected {$callee->arity()} arguments but got $argumentCount.");
+            }
+
+            return $callee->call($this, $arguments);
+        }
+        throw new RuntimeException($call->paren, 'Can only call functions and classes.');
     }
 }

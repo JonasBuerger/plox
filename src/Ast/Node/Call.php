@@ -6,16 +6,19 @@ namespace Plox\Ast\Node;
 
 use Plox\Ast\Expression;
 use Plox\Ast\ExpressionVisitor;
+use Plox\Token;
 
-class Literal extends Expression
+class Call extends Expression
 {
     public function __construct(
-        public mixed $value,
+        public Expression $callee,
+        public Token $paren,
+        public array $arguments,
     ) {
     }
 
     public function accept(ExpressionVisitor $visitor): mixed
     {
-        return $visitor->visitLiteralExpression($this);
+        return $visitor->visitCallExpression($this);
     }
 }
