@@ -11,6 +11,7 @@ use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
+use Plox\Ast\Node\PloxBreak;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -258,6 +259,7 @@ final class Parser
             $this->match(TokenType::WHILE) => $this->whileStatement(),
             $this->match(TokenType::FOR) => $this->forStatement(),
             $this->match(TokenType::LEFT_BRACE) => new Block($this->block()),
+            $this->match(TokenType::BREAK) => $this->breakStatement(),
             default => $this->expressionStatement(),
         };
     }
@@ -380,5 +382,13 @@ final class Parser
         }
 
         return $body;
+    }
+
+    private function breakStatement(): PloxBreak
+    {
+        $node = new PloxBreak($this->previous());
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after break.");
+
+        return $node;
     }
 }

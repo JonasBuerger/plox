@@ -32,6 +32,7 @@ class Generator
             // if is a reserved keyword in PHP
             'PloxIf' => ['condition' => Expression::class, 'thenBranch' => Statement::class, 'elseBranch' => Statement::class . '|null'],
             'PloxWhile' => ['condition' => Expression::class, 'body' => Statement::class],
+            'PloxBreak' => ['break' => Token::class],
         ],
     ];
 

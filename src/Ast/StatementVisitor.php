@@ -6,6 +6,7 @@ namespace Plox\Ast;
 
 use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Expression;
+use Plox\Ast\Node\PloxBreak;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -45,4 +46,9 @@ interface StatementVisitor
      * @return T
      */
     public function visitPloxWhileStatement(PloxWhile $ploxWhile);
+
+    /**
+     * @return T
+     */
+    public function visitPloxBreakStatement(PloxBreak $ploxBreak);
 }

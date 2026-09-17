@@ -10,6 +10,7 @@ use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
+use Plox\Ast\Node\PloxBreak;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -30,6 +31,8 @@ use Plox\TokenType;
  */
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
+    private ?Token $breakTraversal = null;
+
     public function __construct(
         private Environment $environment = new Environment(),
     ) {
@@ -42,7 +45,10 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
     {
         try {
             foreach ($statements as $statement) {
-                $statement->accept($this);
+                $this->execute($statement);
+            }
+            if ($this->breakTraversal instanceof Token) {
+                throw new RuntimeException($this->breakTraversal, 'break must be within a loop.');
             }
         } catch (RuntimeException $e) {
             Plox::error($e->getToken(), $e->getMessage());
@@ -51,8 +57,8 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitBinaryExpression(Binary $binary): string|float|bool|null
     {
-        $left = $binary->left->accept($this);
-        $right = $binary->right->accept($this);
+        $left = $this->evaluate($binary->left);
+        $right = $this->evaluate($binary->right);
 
         switch ($binary->operator->type) {
             case TokenType::MINUS:
@@ -99,7 +105,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitGroupingExpression(Grouping $grouping): string|float|bool|null
     {
-        return $grouping->expression->accept($this);
+        return $this->evaluate($grouping->expression);
     }
 
     public function visitLiteralExpression(Literal $literal): string|float|bool|null
@@ -109,7 +115,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitUnaryExpression(Unary $unary): string|float|bool
     {
-        $value = $unary->right->accept($this);
+        $value = $this->evaluate($unary->right);
 
         switch ($unary->operator->type) {
             case TokenType::BANG:
@@ -150,12 +156,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitExpressionStatement(Expression $expression): void
     {
-        $expression->expression->accept($this);
+        $this->evaluate($expression->expression);
     }
 
     public function visitPloxPrintStatement(PloxPrint $ploxPrint): void
     {
-        $value = $ploxPrint->expression->accept($this);
+        $value = $this->evaluate($ploxPrint->expression);
         echo $this->stringify($value), PHP_EOL;
     }
 
@@ -166,13 +172,16 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitPloxVarStatement(PloxVar $ploxVar): void
     {
-        $value = $ploxVar->initializer?->accept($this);
+        $value = null;
+        if($ploxVar->initializer instanceof \Plox\Ast\Expression){
+            $value = $this->evaluate($ploxVar->initializer);
+        }
         $this->environment->define($ploxVar->name, $value);
     }
 
     public function visitAssignExpression(Assign $assign): string|float|bool|null
     {
-        $value = $assign->value->accept($this);
+        $value = $this->evaluate($assign->value);
         $this->environment->assign($assign->name, $value);
 
         return $value;
@@ -183,7 +192,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $outerEnvironment = $this->environment;
         $this->environment = new Environment($outerEnvironment);
         foreach ($block->statements as $statement) {
-            $statement->accept($this);
+            $this->execute($statement);
         }
         $this->environment = $outerEnvironment;
     }
@@ -195,23 +204,28 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitPloxIfStatement(PloxIf $ploxIf): void
     {
-        if ($this->isTruthy($ploxIf->condition->accept($this))) {
-            $ploxIf->thenBranch->accept($this);
-        } else {
-            $ploxIf->elseBranch?->accept($this);
+        $condition = $this->evaluate($ploxIf->condition);
+        if ($this->isTruthy($condition)) {
+            $this->execute($ploxIf->thenBranch);
+        } elseif ($ploxIf->elseBranch instanceof Statement) {
+            $this->execute($ploxIf->elseBranch);
         }
     }
 
     public function visitPloxWhileStatement(PloxWhile $ploxWhile): void
     {
-        while ($this->isTruthy($ploxWhile->condition->accept($this))) {
-            $ploxWhile->body->accept($this);
+        while ($this->isTruthy($this->evaluate($ploxWhile->condition))) {
+            $this->execute($ploxWhile->body);
+            if($this->breakTraversal instanceof Token){
+                break;
+            }
         }
+        $this->breakTraversal = null;
     }
 
-    public function visitLogicalExpression(Logical $logical)
+    public function visitLogicalExpression(Logical $logical): string|float|bool|null
     {
-        $left = $logical->left->accept($this);
+        $left = $this->evaluate($logical->left);
 
         if ($logical->operator->type === TokenType::OR) {
             if ($this->isTruthy($left)) {
@@ -223,6 +237,24 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             }
         }
 
-        return $logical->right->accept($this);
+        return $this->evaluate($logical->right);
+    }
+
+    public function visitPloxBreakStatement(PloxBreak $ploxBreak): void
+    {
+        $this->breakTraversal = $ploxBreak->break;
+    }
+
+    private function execute(Statement $statement): void
+    {
+        if ($this->breakTraversal instanceof Token) {
+            return;
+        }
+        $statement->accept($this);
+    }
+
+    private function evaluate(\Plox\Ast\Expression $expression): string|float|bool|null
+    {
+        return $expression->accept($this);
     }
 }

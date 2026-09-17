@@ -54,6 +54,7 @@ enum TokenType
     case TRUE;
     case VAR;
     case WHILE;
+    case BREAK;
 
     case EOF;
 }

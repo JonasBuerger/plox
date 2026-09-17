@@ -33,6 +33,7 @@ class Scanner
         'true' => TokenType::TRUE,
         'var' => TokenType::VAR,
         'while' => TokenType::WHILE,
+        'break' => TokenType::BREAK,
     ];
 
     public function __construct(private readonly string $source)
