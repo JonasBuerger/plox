@@ -34,6 +34,7 @@ class Generator
             'PloxIf' => ['condition' => Expression::class, 'thenBranch' => Statement::class, 'elseBranch' => Statement::class . '|null'],
             'PloxWhile' => ['condition' => Expression::class, 'body' => Statement::class],
             'PloxBreak' => ['break' => Token::class],
+            'PloxFunction' => ['name' => Token::class, 'params' => 'array', 'body' => 'array'],
         ],
     ];
 
@@ -42,7 +43,7 @@ class Generator
         $exitCode = ExitCode::SUCCESS->value;
 
         foreach (self::$astNodes as $root => $tree) {
-            self::defineAst($projectDir . '/src/Ast', $root, 'Plox', $tree);
+            self::defineAst($projectDir . '/src/Ast', $root, $tree);
         }
 
         // Fix Code-Style
@@ -56,7 +57,7 @@ class Generator
     /**
      * @param array<string, array<string, string>> $nodes
      */
-    private static function defineAst(string $outputDir, string $baseClass, string $baseNamespace, array $nodes): void
+    private static function defineAst(string $outputDir, string $baseClass, array $nodes): void
     {
         // Generate Ast Node Classes
         foreach ($nodes as $class => $node) {
@@ -64,15 +65,15 @@ class Generator
                 <?php
                 declare(strict_types=1);
 
-                namespace $baseNamespace\\Ast\\Node;
+                namespace Plox\\Ast\\Node;
 
-                class $class extends \\$baseNamespace\\Ast\\$baseClass
+                class $class extends \\Plox\\Ast\\$baseClass
                 {
                     public function __construct(
 
                 CONTENT;
             foreach ($node as $param => $type) {
-                $type = str_replace($baseNamespace, '\\' . $baseNamespace, $type);
+                $type = '\\' . str_replace('|', '|\\', $type);
                 $content .= 'public ' . $type . ' $' . $param . ',' . PHP_EOL;
             }
             $content .= <<<CONTENT
@@ -82,7 +83,7 @@ class Generator
                     /**
                      * @inheritDoc
                      */
-                    public function accept(\\$baseNamespace\\Ast\\{$baseClass}Visitor \$visitor)
+                    public function accept(\\Plox\\Ast\\{$baseClass}Visitor \$visitor)
                     {
                         return \$visitor->visit$class$baseClass(\$this);
                     }
@@ -97,7 +98,7 @@ class Generator
 
             declare(strict_types=1);
 
-            namespace $baseNamespace\\Ast;
+            namespace Plox\\Ast;
 
             /**
              * @template T
@@ -108,18 +109,18 @@ class Generator
         foreach ($nodes as $class => $node) {
             $content .= '/**' . PHP_EOL . '* @return T' . PHP_EOL . '*/' . PHP_EOL;
             $param = lcfirst($class);
-            $content .= "public function visit$class$baseClass(\\$baseNamespace\\Ast\\Node\\$class \$$param);" . PHP_EOL;
+            $content .= "public function visit$class$baseClass(\\Plox\\Ast\\Node\\$class \$$param);" . PHP_EOL;
         }
         $content .= '}';
         file_put_contents($outputDir . '/' . $baseClass . 'Visitor.php', $content);
 
-        // Generate Expression Base Class
+        // Generate Tree Base Class
         $content = <<<CONTENT
             <?php
 
             declare(strict_types=1);
 
-            namespace {$baseNamespace}\Ast;
+            namespace Plox\Ast;
 
             abstract class {$baseClass}
             {

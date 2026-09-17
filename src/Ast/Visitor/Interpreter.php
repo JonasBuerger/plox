@@ -42,9 +42,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         $this->globals = new Environment();
         $this->environment = new Environment($this->globals);
 
-        $this->globals->define('clock', new class implements PloxCallable
-        {
-
+        $this->globals->define('clock', new class implements PloxCallable {
             public function call(Interpreter $interpreter, array $arguments): mixed
             {
                 return microtime(true);
