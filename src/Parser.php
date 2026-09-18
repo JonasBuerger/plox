@@ -16,6 +16,7 @@ use Plox\Ast\Node\PloxBreak;
 use Plox\Ast\Node\PloxFunction;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
+use Plox\Ast\Node\PloxReturn;
 use Plox\Ast\Node\PloxVar;
 use Plox\Ast\Node\PloxWhile;
 use Plox\Ast\Node\Unary;
@@ -322,6 +323,7 @@ final class Parser
             $this->match(TokenType::FOR) => $this->forStatement(),
             $this->match(TokenType::LEFT_BRACE) => new Block($this->block()),
             $this->match(TokenType::BREAK) => $this->breakStatement(),
+            $this->match(TokenType::RETURN) => $this->returnStatement(),
             default => $this->expressionStatement(),
         };
     }
@@ -475,5 +477,17 @@ final class Parser
         $this->consume(TokenType::SEMICOLON, "Expected ';' after break.");
 
         return $node;
+    }
+
+    private function returnStatement(): PloxReturn
+    {
+        $keyword = $this->previous();
+        $value = null;
+        if (!$this->check(TokenType::SEMICOLON)) {
+            $value = $this->expression();
+        }
+        $this->consume(TokenType::SEMICOLON, "Expected ';' after return.");
+
+        return new PloxReturn($keyword, $value);
     }
 }

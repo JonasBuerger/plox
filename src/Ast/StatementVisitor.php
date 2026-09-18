@@ -10,6 +10,7 @@ use Plox\Ast\Node\PloxBreak;
 use Plox\Ast\Node\PloxFunction;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
+use Plox\Ast\Node\PloxReturn;
 use Plox\Ast\Node\PloxVar;
 use Plox\Ast\Node\PloxWhile;
 
@@ -57,4 +58,9 @@ interface StatementVisitor
      * @return T
      */
     public function visitPloxFunctionStatement(PloxFunction $ploxFunction);
+
+    /**
+     * @return T
+     */
+    public function visitPloxReturnStatement(PloxReturn $ploxReturn);
 }

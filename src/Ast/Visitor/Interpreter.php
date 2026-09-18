@@ -12,6 +12,7 @@ use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxBreak;
+use Plox\Ast\Node\PloxFunction;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
 use Plox\Ast\Node\PloxVar;
@@ -23,6 +24,7 @@ use Plox\Ast\StatementVisitor;
 use Plox\Environment;
 use Plox\Plox;
 use Plox\PloxCallable;
+use Plox\PloxReturn;
 use Plox\RuntimeException;
 use Plox\Token;
 use Plox\TokenType;
@@ -33,14 +35,13 @@ use Plox\TokenType;
  */
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
-    private ?Token $breakTraversal = null;
     public readonly Environment $globals;
     private Environment $environment;
 
     public function __construct()
     {
         $this->globals = new Environment();
-        $this->environment = new Environment($this->globals);
+        $this->environment = $this->globals;
 
         $this->globals->define('clock', new class implements PloxCallable {
             public function call(Interpreter $interpreter, array $arguments): mixed
@@ -69,11 +70,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             foreach ($statements as $statement) {
                 $this->execute($statement);
             }
-            if ($this->breakTraversal instanceof Token) {
-                throw new RuntimeException($this->breakTraversal, 'break must be within a loop.');
-            }
         } catch (RuntimeException $e) {
             Plox::error($e->getToken(), $e->getMessage());
+        } catch (PloxReturn $return) {
+            Plox::error($return->getReturnToken(), 'return outside of a function.');
+        } catch (\Plox\PloxBreak $break) {
+            Plox::error($break->getBreakToken(), 'break must be within a loop.');
         }
     }
 
@@ -211,12 +213,23 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitBlockStatement(Block $block): void
     {
-        $outerEnvironment = $this->environment;
-        $this->environment = new Environment($outerEnvironment);
-        foreach ($block->statements as $statement) {
-            $this->execute($statement);
+        $this->executeBlock($block->statements, new Environment($this->environment));
+    }
+
+    /**
+     * @param list<Statement> $statements
+     */
+    public function executeBlock(array $statements, Environment $environment): void
+    {
+        $previousEnvironment = $this->environment;
+        $this->environment = $environment;
+        try {
+            foreach ($statements as $statement) {
+                $this->execute($statement);
+            }
+        } finally {
+            $this->environment = $previousEnvironment;
         }
-        $this->environment = $outerEnvironment;
     }
 
     private function isTruthy(mixed $value): bool
@@ -236,13 +249,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitPloxWhileStatement(PloxWhile $ploxWhile): void
     {
-        while ($this->isTruthy($this->evaluate($ploxWhile->condition))) {
-            $this->execute($ploxWhile->body);
-            if ($this->breakTraversal instanceof Token) {
-                break;
+        try {
+            while ($this->isTruthy($this->evaluate($ploxWhile->condition))) {
+                $this->execute($ploxWhile->body);
             }
+        } catch (\Plox\PloxBreak) {
         }
-        $this->breakTraversal = null;
     }
 
     public function visitLogicalExpression(Logical $logical): mixed
@@ -264,14 +276,11 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitPloxBreakStatement(PloxBreak $ploxBreak): void
     {
-        $this->breakTraversal = $ploxBreak->break;
+        throw new \Plox\PloxBreak($ploxBreak->keyword);
     }
 
     private function execute(Statement $statement): void
     {
-        if ($this->breakTraversal instanceof Token) {
-            return;
-        }
         $statement->accept($this);
     }
 
@@ -296,5 +305,20 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             return $callee->call($this, $arguments);
         }
         throw new RuntimeException($call->paren, 'Can only call functions and classes.');
+    }
+
+    public function visitPloxFunctionStatement(PloxFunction $ploxFunction): void
+    {
+        $function = new \Plox\PloxFunction($ploxFunction, $this->environment);
+        $this->environment->define($ploxFunction->name->lexeme, $function);
+    }
+
+    public function visitPloxReturnStatement(\Plox\Ast\Node\PloxReturn $ploxReturn): never
+    {
+        $value = null;
+        if ($ploxReturn->value instanceof \Plox\Ast\Expression) {
+            $value = $this->evaluate($ploxReturn->value);
+        }
+        throw new PloxReturn($ploxReturn->keyword, $value);
     }
 }
