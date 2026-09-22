@@ -13,6 +13,11 @@ class PloxFunction implements PloxCallable
     ) {
     }
 
+    public function __toString(): string
+    {
+        return "<fun '{$this->declaration->name->lexeme}'>";
+    }
+
     public function call(Interpreter $interpreter, array $arguments): mixed
     {
         $environment = new Environment($this->closure);
@@ -33,10 +38,5 @@ class PloxFunction implements PloxCallable
     public function arity(): int
     {
         return count($this->declaration->params);
-    }
-
-    public function __toString(): string
-    {
-        return "<fun '{$this->declaration->name->lexeme}'>";
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plox;
 
 use Plox\Ast\Visitor\Interpreter;
+use Plox\Ast\Visitor\Resolver;
 
 final class Plox
 {
@@ -34,6 +35,15 @@ final class Plox
         return self::$hadError ? ExitCode::EX_SOFTWARE->value : ExitCode::SUCCESS->value;
     }
 
+    public static function error(Token $token, string $message): void
+    {
+        if ($token->type == TokenType::EOF) {
+            self::report($token->line, ' at end', $message);
+        } else {
+            self::report($token->line, " at '" . $token->lexeme . "'", $message);
+        }
+    }
+
     private static function run(string $code): void
     {
         $scanner = new Scanner($code);
@@ -43,17 +53,12 @@ final class Plox
             $statements = $parser->parse();
             if (!self::$hadError) {
                 self::$interpreter ??= new Interpreter();
-                self::$interpreter->interpret($statements);
+                $resolver = new Resolver(self::$interpreter);
+                $resolver->resolveStatements($statements);
+                if (!self::$hadError) {
+                    self::$interpreter->interpret($statements);
+                }
             }
-        }
-    }
-
-    public static function error(Token $token, string $message): void
-    {
-        if ($token->type == TokenType::EOF) {
-            self::report($token->line, ' at end', $message);
-        } else {
-            self::report($token->line, " at '" . $token->lexeme . "'", $message);
         }
     }
 

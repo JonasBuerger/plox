@@ -36,6 +36,10 @@ use Plox\TokenType;
 class Interpreter implements ExpressionVisitor, StatementVisitor
 {
     public readonly Environment $globals;
+    /**
+     * @var array<int, int>
+     */
+    private array $locals = [];
     private Environment $environment;
 
     public function __construct()
@@ -153,31 +157,6 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    private function plus(Token $operator, mixed $left, mixed $right): string|float
-    {
-        if (is_float($left) && is_float($right)) {
-            return $left + $right;
-        }
-        if (is_string($left) && is_string($right)) {
-            return $left . $right;
-        }
-
-        throw new RuntimeException($operator, 'Operands must be two numbers or two strings.');
-    }
-
-    private function checkNumberOperands(Token $operator, mixed ...$operands): void
-    {
-        if (array_all($operands, fn (mixed $value, $_key): bool => is_float($value))) {
-            return;
-        }
-        throw new RuntimeException($operator, 'Operand must be a number.');
-    }
-
-    private function stringify(mixed $value): string
-    {
-        return $value === null ? 'nil' : strval($value);
-    }
-
     public function visitExpressionStatement(Expression $expression): void
     {
         $this->evaluate($expression->expression);
@@ -191,7 +170,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
 
     public function visitVariableExpression(Variable $variable): mixed
     {
-        return $this->environment->get($variable->name);
+        return $this->lookupVariable($variable->name, $variable);
     }
 
     public function visitPloxVarStatement(PloxVar $ploxVar): void
@@ -206,7 +185,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
     public function visitAssignExpression(Assign $assign): mixed
     {
         $value = $this->evaluate($assign->value);
-        $this->environment->assign($assign->name, $value);
+        $distance = $this->locals[spl_object_id($assign)] ?? null;
+        if ($distance !== null) {
+            $this->environment->assignAt($distance, $assign->name, $value);
+        } else {
+            $this->globals->assign($assign->name, $value);
+        }
 
         return $value;
     }
@@ -230,11 +214,6 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         } finally {
             $this->environment = $previousEnvironment;
         }
-    }
-
-    private function isTruthy(mixed $value): bool
-    {
-        return (bool) ($value ?? false);
     }
 
     public function visitPloxIfStatement(PloxIf $ploxIf): void
@@ -279,16 +258,6 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         throw new \Plox\PloxBreak($ploxBreak->keyword);
     }
 
-    private function execute(Statement $statement): void
-    {
-        $statement->accept($this);
-    }
-
-    private function evaluate(\Plox\Ast\Expression $expression): mixed
-    {
-        return $expression->accept($this);
-    }
-
     public function visitCallExpression(Call $call): mixed
     {
         $callee = $this->evaluate($call->callee);
@@ -320,5 +289,60 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             $value = $this->evaluate($ploxReturn->value);
         }
         throw new PloxReturn($ploxReturn->keyword, $value);
+    }
+
+    public function resolve(\Plox\Ast\Expression $expression, int $depth): void
+    {
+        $this->locals[spl_object_id($expression)] = $depth;
+    }
+
+    private function plus(Token $operator, mixed $left, mixed $right): string|float
+    {
+        if (is_float($left) && is_float($right)) {
+            return $left + $right;
+        }
+        if (is_string($left) && is_string($right)) {
+            return $left . $right;
+        }
+
+        throw new RuntimeException($operator, 'Operands must be two numbers or two strings.');
+    }
+
+    private function checkNumberOperands(Token $operator, mixed ...$operands): void
+    {
+        if (array_all($operands, fn (mixed $value, $_key): bool => is_float($value))) {
+            return;
+        }
+        throw new RuntimeException($operator, 'Operand must be a number.');
+    }
+
+    private function stringify(mixed $value): string
+    {
+        return $value === null ? 'nil' : strval($value);
+    }
+
+    private function lookupVariable(Token $name, \Plox\Ast\Expression $expression): mixed
+    {
+        $distance = $this->locals[spl_object_id($expression)] ?? null;
+        if ($distance !== null) {
+            return $this->environment->getAt($distance, $name->lexeme);
+        }
+
+        return $this->globals->get($name);
+    }
+
+    private function isTruthy(mixed $value): bool
+    {
+        return (bool) ($value ?? false);
+    }
+
+    private function execute(Statement $statement): void
+    {
+        $statement->accept($this);
+    }
+
+    private function evaluate(\Plox\Ast\Expression $expression): mixed
+    {
+        return $expression->accept($this);
     }
 }

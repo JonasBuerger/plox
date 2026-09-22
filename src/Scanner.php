@@ -7,13 +7,6 @@ namespace Plox;
 class Scanner
 {
     /**
-     * @var list<Token>
-     */
-    private array $tokens = [];
-    private int $start = 0;
-    private int $current = 0;
-    private int $line = 1;
-    /**
      * @var array<string, TokenType>
      */
     private static array $keywords = [
@@ -35,6 +28,13 @@ class Scanner
         'while' => TokenType::WHILE,
         'break' => TokenType::BREAK,
     ];
+    /**
+     * @var list<Token>
+     */
+    private array $tokens = [];
+    private int $start = 0;
+    private int $current = 0;
+    private int $line = 1;
 
     public function __construct(private readonly string $source)
     {
