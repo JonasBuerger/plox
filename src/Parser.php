@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace Plox;
 
-use Plox\Ast\Expression;
+use Plox\Ast\Expr;
 use Plox\Ast\Node\Assign;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Block;
 use Plox\Ast\Node\Call;
+use Plox\Ast\Node\Expression;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
 use Plox\Ast\Node\Logical;
 use Plox\Ast\Node\PloxBreak;
+use Plox\Ast\Node\PloxClass;
 use Plox\Ast\Node\PloxFunction;
 use Plox\Ast\Node\PloxIf;
 use Plox\Ast\Node\PloxPrint;
@@ -21,7 +23,7 @@ use Plox\Ast\Node\PloxVar;
 use Plox\Ast\Node\PloxWhile;
 use Plox\Ast\Node\Unary;
 use Plox\Ast\Node\Variable;
-use Plox\Ast\Statement;
+use Plox\Ast\Stmt;
 
 final class Parser
 {
@@ -36,14 +38,14 @@ final class Parser
     }
 
     /**
-     * @return list<Statement>
+     * @return list<Stmt>
      */
     public function parse(): array
     {
         $statements = [];
         while (!$this->isAtEnd()) {
             $statement = $this->declaration();
-            if ($statement instanceof Statement) {
+            if ($statement instanceof Stmt) {
                 $statements[] = $statement;
             }
         }
@@ -51,12 +53,12 @@ final class Parser
         return $statements;
     }
 
-    private function expression(): Expression
+    private function expression(): Expr
     {
         return $this->assignment();
     }
 
-    private function assignment(): Expression
+    private function assignment(): Expr
     {
         $expression = $this->logicOr();
         if ($this->match(TokenType::EQUAL)) {
@@ -72,7 +74,7 @@ final class Parser
         return $expression;
     }
 
-    private function logicOr(): Expression
+    private function logicOr(): Expr
     {
         $expr = $this->logicAnd();
         while ($this->match(TokenType::OR)) {
@@ -83,7 +85,7 @@ final class Parser
         return $expr;
     }
 
-    private function logicAnd(): Expression
+    private function logicAnd(): Expr
     {
         $expr = $this->equality();
         while ($this->match(TokenType::AND)) {
@@ -94,7 +96,7 @@ final class Parser
         return $expr;
     }
 
-    private function equality(): Expression
+    private function equality(): Expr
     {
         $expr = $this->comparison();
         while ($this->match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)) {
@@ -106,7 +108,7 @@ final class Parser
         return $expr;
     }
 
-    private function comparison(): Expression
+    private function comparison(): Expr
     {
         $expr = $this->term();
         while ($this->match(TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL)) {
@@ -118,7 +120,7 @@ final class Parser
         return $expr;
     }
 
-    private function term(): Expression
+    private function term(): Expr
     {
         $expr = $this->factor();
         while ($this->match(TokenType::MINUS, TokenType::PLUS)) {
@@ -130,7 +132,7 @@ final class Parser
         return $expr;
     }
 
-    private function factor(): Expression
+    private function factor(): Expr
     {
         $expr = $this->unary();
         while ($this->match(TokenType::STAR, TokenType::SLASH)) {
@@ -142,7 +144,7 @@ final class Parser
         return $expr;
     }
 
-    private function unary(): Expression
+    private function unary(): Expr
     {
         if ($this->match(TokenType::BANG, TokenType::MINUS)) {
             return new Unary($this->previous(), $this->unary());
@@ -151,7 +153,7 @@ final class Parser
         return $this->call();
     }
 
-    private function call(): Expression
+    private function call(): Expr
     {
         $expression = $this->primary();
 
@@ -166,7 +168,7 @@ final class Parser
         return $expression;
     }
 
-    private function finishCall(Expression $callee): Call
+    private function finishCall(Expr $callee): Call
     {
         $arguments = [];
         if (!$this->check(TokenType::RIGHT_PAREN)) {
@@ -211,7 +213,7 @@ final class Parser
     //        return $expressions;
     //    }
 
-    private function primary(): Expression
+    private function primary(): Expr
     {
         if ($this->match(TokenType::FALSE)) {
             return new Literal(false);
@@ -314,7 +316,7 @@ final class Parser
         return $this->tokens[$this->current];
     }
 
-    private function statement(): Statement
+    private function statement(): Stmt
     {
         return match (true) {
             $this->match(TokenType::PRINT) => $this->printStatement(),
@@ -329,14 +331,14 @@ final class Parser
     }
 
     /**
-     * @return list<Statement>
+     * @return list<Stmt>
      */
     private function block(): array
     {
         $statements = [];
         while (!$this->isAtEnd() && !$this->check(TokenType::RIGHT_BRACE)) {
             $statement = $this->declaration();
-            if ($statement instanceof Statement) {
+            if ($statement instanceof Stmt) {
                 $statements[] = $statement;
             }
         }
@@ -354,17 +356,20 @@ final class Parser
         return new PloxPrint($value);
     }
 
-    private function expressionStatement(): Ast\Node\Expression
+    private function expressionStatement(): Expression
     {
         $value = $this->expression();
         $this->consume(TokenType::SEMICOLON, "Expect ';' after expression.");
 
-        return new Ast\Node\Expression($value);
+        return new Expression($value);
     }
 
-    private function declaration(): ?Statement
+    private function declaration(): ?Stmt
     {
         try {
+            if ($this->match(TokenType::TYPE_CLASS)) {
+                return $this->classDeclaration();
+            }
             if ($this->match(TokenType::FUN)) {
                 return $this->function('function');
             }
@@ -378,6 +383,21 @@ final class Parser
 
             return null;
         }
+    }
+
+    private function classDeclaration(): PloxClass
+    {
+        $name = $this->consume(TokenType::IDENTIFIER, 'Expect class name.');
+        $this->consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
+
+        $methods = [];
+        while (!$this->check(TokenType::RIGHT_BRACE) && !$this->isAtEnd()) {
+            $methods[] = $this->function('method');
+        }
+
+        $this->consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
+
+        return new PloxClass($name, $methods);
     }
 
     private function function(string $kind): PloxFunction
@@ -436,7 +456,7 @@ final class Parser
         return new PloxWhile($condition, $body);
     }
 
-    private function forStatement(): Statement
+    private function forStatement(): Stmt
     {
         $this->consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
         if ($this->match(TokenType::SEMICOLON)) {
@@ -458,8 +478,8 @@ final class Parser
         $this->consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
 
         $body = $this->statement();
-        if ($increment instanceof Expression) {
-            $body = new Block([$body, new Ast\Node\Expression($increment)]);
+        if ($increment instanceof Expr) {
+            $body = new Block([$body, new Expression($increment)]);
         }
         $condition ??= new Literal(true);
 

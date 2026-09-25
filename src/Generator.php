@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Plox;
 
-use Plox\Ast\Expression;
-use Plox\Ast\Statement;
+use Plox\Ast\Expr;
+use Plox\Ast\Stmt;
 
 class Generator
 {
@@ -13,29 +13,30 @@ class Generator
      * @var array<string, array<string, array<string, string>>>
      */
     private static array $astNodes = [
-        'Expression' => [
-            'Binary' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
-            'Grouping' => ['expression' => Expression::class],
+        'Expr' => [
+            'Binary' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
+            'Grouping' => ['expression' => Expr::class],
             'Literal' => ['value' => 'mixed'],
-            'Unary' => ['operator' => Token::class, 'right' => Expression::class],
+            'Unary' => ['operator' => Token::class, 'right' => Expr::class],
             'Variable' => ['name' => Token::class],
-            'Assign' => ['name' => Token::class, 'value' => Expression::class],
-            'Logical' => ['left' => Expression::class, 'operator' => Token::class, 'right' => Expression::class],
-            'Call' => ['callee' => Expression::class, 'paren' => Token::class, 'arguments' => 'array'],
+            'Assign' => ['name' => Token::class, 'value' => Expr::class],
+            'Logical' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
+            'Call' => ['callee' => Expr::class, 'paren' => Token::class, 'arguments' => 'array'],
         ],
-        'Statement' => [
-            'Expression' => ['expression' => Expression::class],
+        'Stmt' => [
+            'Expression' => ['expression' => Expr::class],
             // print is a reserved keyword in PHP
-            'PloxPrint' => ['expression' => Expression::class],
+            'PloxPrint' => ['expression' => Expr::class],
             // var is a reserved keyword in PHP
-            'PloxVar' => ['name' => Token::class, 'initializer' => Expression::class . '|null'],
+            'PloxVar' => ['name' => Token::class, 'initializer' => Expr::class . '|null'],
             'Block' => ['statements' => 'array'],
             // if is a reserved keyword in PHP
-            'PloxIf' => ['condition' => Expression::class, 'thenBranch' => Statement::class, 'elseBranch' => Statement::class . '|null'],
-            'PloxWhile' => ['condition' => Expression::class, 'body' => Statement::class],
+            'PloxIf' => ['condition' => Expr::class, 'thenBranch' => Stmt::class, 'elseBranch' => Stmt::class . '|null'],
+            'PloxWhile' => ['condition' => Expr::class, 'body' => Stmt::class],
             'PloxBreak' => ['keyword' => Token::class],
             'PloxFunction' => ['name' => Token::class, 'params' => 'array', 'body' => 'array'],
-            'PloxReturn' => ['keyword' => Token::class, 'value' => Expression::class . '|null'],
+            'PloxReturn' => ['keyword' => Token::class, 'value' => Expr::class . '|null'],
+            'PloxClass' => ['name' => Token::class, 'methods' => 'array'],
         ],
     ];
 
@@ -60,13 +61,16 @@ class Generator
      */
     private static function defineAst(string $outputDir, string $baseClass, array $nodes): void
     {
+        if (!is_dir($outputDir . '/Node/' . $baseClass)) {
+            mkdir($outputDir . '/Node/' . $baseClass);
+        }
         // Generate Ast Node Classes
         foreach ($nodes as $class => $node) {
             $content = <<<CONTENT
                 <?php
                 declare(strict_types=1);
 
-                namespace Plox\\Ast\\Node;
+                namespace Plox\\Ast\\Node\\$baseClass;
 
                 class $class extends \\Plox\\Ast\\$baseClass
                 {
@@ -90,7 +94,7 @@ class Generator
                     }
                 }
                 CONTENT;
-            file_put_contents($outputDir . '/Node/' . $class . '.php', $content);
+            file_put_contents($outputDir . '/Node/' . $baseClass . '/' . $class . '.php', $content);
         }
 
         // Generate ExpressionVisitor Interface
@@ -110,7 +114,7 @@ class Generator
         foreach ($nodes as $class => $node) {
             $content .= '/**' . PHP_EOL . '* @return T' . PHP_EOL . '*/' . PHP_EOL;
             $param = lcfirst($class);
-            $content .= "public function visit$class$baseClass(\\Plox\\Ast\\Node\\$class \$$param);" . PHP_EOL;
+            $content .= "public function visit$class$baseClass(\\Plox\\Ast\\Node\\$baseClass\\$class \$$param);" . PHP_EOL;
         }
         $content .= '}';
         file_put_contents($outputDir . '/' . $baseClass . 'Visitor.php', $content);

@@ -2,38 +2,28 @@
 
 namespace Plox\Ast\Visitor;
 
-use Plox\Ast\ExpressionVisitor;
-use Plox\Ast\Node\Assign;
-use Plox\Ast\Node\Binary;
-use Plox\Ast\Node\Block;
-use Plox\Ast\Node\Call;
-use Plox\Ast\Node\Expression;
-use Plox\Ast\Node\Grouping;
-use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Logical;
-use Plox\Ast\Node\PloxBreak;
-use Plox\Ast\Node\PloxFunction;
-use Plox\Ast\Node\PloxIf;
-use Plox\Ast\Node\PloxPrint;
-use Plox\Ast\Node\PloxVar;
-use Plox\Ast\Node\PloxWhile;
-use Plox\Ast\Node\Unary;
-use Plox\Ast\Node\Variable;
-use Plox\Ast\Statement;
-use Plox\Ast\StatementVisitor;
+use Plox\Ast\Expr;
+use Plox\Ast\ExprVisitor;
+use Plox\Ast\Node\Expr as Expression;
+use Plox\Ast\Node\Stmt as Statement;
+use Plox\Ast\Stmt;
+use Plox\Ast\StmtVisitor;
+use Plox\BreakThrowable;
 use Plox\Environment;
 use Plox\Plox;
 use Plox\PloxCallable;
-use Plox\PloxReturn;
+use Plox\ReturnThrowable;
+use Plox\RuntimeClass;
 use Plox\RuntimeException;
+use Plox\RuntimeFunction;
 use Plox\Token;
 use Plox\TokenType;
 
 /**
- * @template-implements ExpressionVisitor<mixed>
- * @template-implements StatementVisitor<void>
+ * @template-implements ExprVisitor<mixed>
+ * @template-implements StmtVisitor<void>
  */
-class Interpreter implements ExpressionVisitor, StatementVisitor
+class Interpreter implements ExprVisitor, StmtVisitor
 {
     public readonly Environment $globals;
     /**
@@ -66,7 +56,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
     }
 
     /**
-     * @param list<Statement> $statements
+     * @param list<Stmt> $statements
      */
     public function interpret(array $statements): void
     {
@@ -76,14 +66,14 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
             }
         } catch (RuntimeException $e) {
             Plox::error($e->getToken(), $e->getMessage());
-        } catch (PloxReturn $return) {
+        } catch (ReturnThrowable $return) {
             Plox::error($return->getReturnToken(), 'return outside of a function.');
-        } catch (\Plox\PloxBreak $break) {
+        } catch (BreakThrowable $break) {
             Plox::error($break->getBreakToken(), 'break must be within a loop.');
         }
     }
 
-    public function visitBinaryExpression(Binary $binary): mixed
+    public function visitBinaryExpr(Expression\Binary $binary): mixed
     {
         $left = $this->evaluate($binary->left);
         $right = $this->evaluate($binary->right);
@@ -131,17 +121,17 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitGroupingExpression(Grouping $grouping): mixed
+    public function visitGroupingExpr(Expression\Grouping $grouping): mixed
     {
         return $this->evaluate($grouping->expression);
     }
 
-    public function visitLiteralExpression(Literal $literal): mixed
+    public function visitLiteralExpr(Expression\Literal $literal): mixed
     {
         return $literal->value;
     }
 
-    public function visitUnaryExpression(Unary $unary): string|float|bool
+    public function visitUnaryExpr(Expression\Unary $unary): string|float|bool
     {
         $value = $this->evaluate($unary->right);
 
@@ -157,32 +147,32 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitExpressionStatement(Expression $expression): void
+    public function visitExpressionStmt(Statement\Expression $expression): void
     {
         $this->evaluate($expression->expression);
     }
 
-    public function visitPloxPrintStatement(PloxPrint $ploxPrint): void
+    public function visitPloxPrintStmt(Statement\PloxPrint $ploxPrint): void
     {
         $value = $this->evaluate($ploxPrint->expression);
         echo $this->stringify($value), PHP_EOL;
     }
 
-    public function visitVariableExpression(Variable $variable): mixed
+    public function visitVariableExpr(Expression\Variable $variable): mixed
     {
         return $this->lookupVariable($variable->name, $variable);
     }
 
-    public function visitPloxVarStatement(PloxVar $ploxVar): void
+    public function visitPloxVarStmt(Statement\PloxVar $ploxVar): void
     {
         $value = null;
-        if ($ploxVar->initializer instanceof \Plox\Ast\Expression) {
+        if ($ploxVar->initializer instanceof Expr) {
             $value = $this->evaluate($ploxVar->initializer);
         }
         $this->environment->define($ploxVar->name->lexeme, $value);
     }
 
-    public function visitAssignExpression(Assign $assign): mixed
+    public function visitAssignExpr(Expression\Assign $assign): mixed
     {
         $value = $this->evaluate($assign->value);
         $distance = $this->locals[spl_object_id($assign)] ?? null;
@@ -195,13 +185,13 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         return $value;
     }
 
-    public function visitBlockStatement(Block $block): void
+    public function visitBlockStmt(Statement\Block $block): void
     {
         $this->executeBlock($block->statements, new Environment($this->environment));
     }
 
     /**
-     * @param list<Statement> $statements
+     * @param list<Stmt> $statements
      */
     public function executeBlock(array $statements, Environment $environment): void
     {
@@ -216,27 +206,27 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitPloxIfStatement(PloxIf $ploxIf): void
+    public function visitPloxIfStmt(Statement\PloxIf $ploxIf): void
     {
         $condition = $this->evaluate($ploxIf->condition);
         if ($this->isTruthy($condition)) {
             $this->execute($ploxIf->thenBranch);
-        } elseif ($ploxIf->elseBranch instanceof Statement) {
+        } elseif ($ploxIf->elseBranch instanceof Stmt) {
             $this->execute($ploxIf->elseBranch);
         }
     }
 
-    public function visitPloxWhileStatement(PloxWhile $ploxWhile): void
+    public function visitPloxWhileStmt(Statement\PloxWhile $ploxWhile): void
     {
         try {
             while ($this->isTruthy($this->evaluate($ploxWhile->condition))) {
                 $this->execute($ploxWhile->body);
             }
-        } catch (\Plox\PloxBreak) {
+        } catch (BreakThrowable) {
         }
     }
 
-    public function visitLogicalExpression(Logical $logical): mixed
+    public function visitLogicalExpr(Expression\Logical $logical): mixed
     {
         $left = $this->evaluate($logical->left);
 
@@ -253,12 +243,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         return $this->evaluate($logical->right);
     }
 
-    public function visitPloxBreakStatement(PloxBreak $ploxBreak): void
+    public function visitPloxBreakStmt(Statement\PloxBreak $ploxBreak): void
     {
-        throw new \Plox\PloxBreak($ploxBreak->keyword);
+        throw new BreakThrowable($ploxBreak->keyword);
     }
 
-    public function visitCallExpression(Call $call): mixed
+    public function visitCallExpr(Expression\Call $call): mixed
     {
         $callee = $this->evaluate($call->callee);
         $arguments = [];
@@ -276,24 +266,31 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         throw new RuntimeException($call->paren, 'Can only call functions and classes.');
     }
 
-    public function visitPloxFunctionStatement(PloxFunction $ploxFunction): void
+    public function visitPloxFunctionStmt(Statement\PloxFunction $ploxFunction): void
     {
-        $function = new \Plox\PloxFunction($ploxFunction, $this->environment);
+        $function = new RuntimeFunction($ploxFunction, $this->environment);
         $this->environment->define($ploxFunction->name->lexeme, $function);
     }
 
-    public function visitPloxReturnStatement(\Plox\Ast\Node\PloxReturn $ploxReturn): never
+    public function visitPloxReturnStmt(Statement\PloxReturn $ploxReturn): never
     {
         $value = null;
-        if ($ploxReturn->value instanceof \Plox\Ast\Expression) {
+        if ($ploxReturn->value instanceof Expr) {
             $value = $this->evaluate($ploxReturn->value);
         }
-        throw new PloxReturn($ploxReturn->keyword, $value);
+        throw new ReturnThrowable($ploxReturn->keyword, $value);
     }
 
-    public function resolve(\Plox\Ast\Expression $expression, int $depth): void
+    public function resolve(Expr $expression, int $depth): void
     {
         $this->locals[spl_object_id($expression)] = $depth;
+    }
+
+    public function visitPloxClassStmt(Statement\PloxClass $ploxClass): void
+    {
+        $this->environment->define($ploxClass->name->lexeme, null);
+        $class = new RuntimeClass($ploxClass->name->lexeme);
+        $this->environment->assign($ploxClass->name, $class);
     }
 
     private function plus(Token $operator, mixed $left, mixed $right): string|float
@@ -321,7 +318,7 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         return $value === null ? 'nil' : strval($value);
     }
 
-    private function lookupVariable(Token $name, \Plox\Ast\Expression $expression): mixed
+    private function lookupVariable(Token $name, Expr $expression): mixed
     {
         $distance = $this->locals[spl_object_id($expression)] ?? null;
         if ($distance !== null) {
@@ -336,12 +333,12 @@ class Interpreter implements ExpressionVisitor, StatementVisitor
         return (bool) ($value ?? false);
     }
 
-    private function execute(Statement $statement): void
+    private function execute(Stmt $statement): void
     {
         $statement->accept($this);
     }
 
-    private function evaluate(\Plox\Ast\Expression $expression): mixed
+    private function evaluate(Expr $expression): mixed
     {
         return $expression->accept($this);
     }

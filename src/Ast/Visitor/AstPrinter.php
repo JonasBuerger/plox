@@ -4,29 +4,26 @@ declare(strict_types=1);
 
 namespace Plox\Ast\Visitor;
 
-use Plox\Ast\Expression;
-use Plox\Ast\ExpressionVisitor;
-use Plox\Ast\Node\Binary;
-use Plox\Ast\Node\Grouping;
-use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Unary;
+use Plox\Ast\Expr;
+use Plox\Ast\ExprVisitor;
+use Plox\Ast\Node\Expr as Expression;
 
 /**
- * @template-implements ExpressionVisitor<string>
+ * @template-implements ExprVisitor<string>
  */
-class AstPrinter implements ExpressionVisitor
+class AstPrinter implements ExprVisitor
 {
-    public function visitBinaryExpression(Binary $binary): string
+    public function visitBinaryExpr(Expression\Binary $binary): string
     {
         return $this->parenthesize($binary->operator->lexeme, $binary->left, $binary->right);
     }
 
-    public function visitGroupingExpression(Grouping $grouping): string
+    public function visitGroupingExpr(Expression\Grouping $grouping): string
     {
         return $this->parenthesize('group', $grouping->expression);
     }
 
-    public function visitLiteralExpression(Literal $literal): string
+    public function visitLiteralExpr(Expression\Literal $literal): string
     {
         return match (gettype($literal->value)) {
             'boolean' => $literal->value ? 'true' : 'false',
@@ -37,13 +34,33 @@ class AstPrinter implements ExpressionVisitor
         };
     }
 
-    public function visitUnaryExpression(Unary $unary): string
+    public function visitUnaryExpr(Expression\Unary $unary): string
     {
         return $this->parenthesize($unary->operator->lexeme, $unary->right);
     }
 
-    private function parenthesize(string $name, Expression ...$expressions): string
+    public function visitVariableExpr(Expression\Variable $variable): string
     {
-        return '(' . $name . ' ' . implode(' ', array_map(fn (Expression $expression): mixed => $expression->accept($this), $expressions)) . ')';
+        return $this->parenthesize('get ' . $variable->name->lexeme);
+    }
+
+    public function visitAssignExpr(Expression\Assign $assign): string
+    {
+        return $this->parenthesize('assign ' . $assign->name->lexeme, $assign->value->accept($this));
+    }
+
+    public function visitLogicalExpr(Expression\Logical $logical): string
+    {
+        return $this->parenthesize($logical->operator->lexeme, $logical->left, $logical->right);
+    }
+
+    public function visitCallExpr(Expression\Call $call): string
+    {
+        return $this->parenthesize('call', $call->callee->accept($this), ...$call->arguments);
+    }
+
+    private function parenthesize(string $name, Expr ...$expressions): string
+    {
+        return '(' . $name . ' ' . implode(' ', array_map(fn (Expr $expression): mixed => $expression->accept($this), $expressions)) . ')';
     }
 }

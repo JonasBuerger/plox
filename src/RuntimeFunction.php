@@ -2,13 +2,13 @@
 
 namespace Plox;
 
-use Plox\Ast\Node;
+use Plox\Ast\Node\PloxFunction;
 use Plox\Ast\Visitor\Interpreter;
 
-class PloxFunction implements PloxCallable
+class RuntimeFunction implements PloxCallable
 {
     public function __construct(
-        private readonly Node\PloxFunction $declaration,
+        private readonly PloxFunction $declaration,
         private readonly Environment $closure,
     ) {
     }
@@ -28,7 +28,7 @@ class PloxFunction implements PloxCallable
 
         try {
             $interpreter->executeBlock($this->declaration->body, $environment);
-        } catch (PloxReturn $return) {
+        } catch (ReturnThrowable $return) {
             return $return->getValue();
         }
 

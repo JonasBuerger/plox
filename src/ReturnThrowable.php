@@ -6,7 +6,7 @@ namespace Plox;
 
 use RuntimeException;
 
-class PloxReturn extends RuntimeException
+class ReturnThrowable extends RuntimeException
 {
     public function __construct(private readonly Token $token, private readonly mixed $value)
     {

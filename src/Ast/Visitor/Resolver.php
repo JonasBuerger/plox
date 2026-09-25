@@ -2,36 +2,21 @@
 
 namespace Plox\Ast\Visitor;
 
-use Plox\Ast\Expression as Expr;
-use Plox\Ast\ExpressionVisitor;
-use Plox\Ast\Node\Assign;
-use Plox\Ast\Node\Binary;
-use Plox\Ast\Node\Block;
-use Plox\Ast\Node\Call;
-use Plox\Ast\Node\Expression;
-use Plox\Ast\Node\Grouping;
-use Plox\Ast\Node\Literal;
-use Plox\Ast\Node\Logical;
-use Plox\Ast\Node\PloxBreak;
-use Plox\Ast\Node\PloxFunction;
-use Plox\Ast\Node\PloxIf;
-use Plox\Ast\Node\PloxPrint;
-use Plox\Ast\Node\PloxReturn;
-use Plox\Ast\Node\PloxVar;
-use Plox\Ast\Node\PloxWhile;
-use Plox\Ast\Node\Unary;
-use Plox\Ast\Node\Variable;
-use Plox\Ast\Statement;
-use Plox\Ast\StatementVisitor;
+use Plox\Ast\Expr;
+use Plox\Ast\ExprVisitor;
+use Plox\Ast\Node\Expr as Expression;
+use Plox\Ast\Node\Stmt as Statement;
+use Plox\Ast\Stmt;
+use Plox\Ast\StmtVisitor;
 use Plox\Plox;
 use Plox\Token;
 use SplStack;
 
 /**
- * @template-implements ExpressionVisitor<void>
- * @template-implements StatementVisitor<void>
+ * @template-implements ExprVisitor<void>
+ * @template-implements StmtVisitor<void>
  */
-class Resolver implements ExpressionVisitor, StatementVisitor
+class Resolver implements ExprVisitor, StmtVisitor
 {
     private FunctionType $currentFunction = FunctionType::NONE;
     private LoopType $currentLoop = LoopType::NONE;
@@ -45,27 +30,27 @@ class Resolver implements ExpressionVisitor, StatementVisitor
     ) {
     }
 
-    public function visitBinaryExpression(Binary $binary): void
+    public function visitBinaryExpr(Expression\Binary $binary): void
     {
         $this->resolve($binary->left);
         $this->resolve($binary->right);
     }
 
-    public function visitGroupingExpression(Grouping $grouping): void
+    public function visitGroupingExpr(Expression\Grouping $grouping): void
     {
         $this->resolve($grouping->expression);
     }
 
-    public function visitLiteralExpression(Literal $literal): void
+    public function visitLiteralExpr(Expression\Literal $literal): void
     {
     }
 
-    public function visitUnaryExpression(Unary $unary): void
+    public function visitUnaryExpr(Expression\Unary $unary): void
     {
         $this->resolve($unary->right);
     }
 
-    public function visitVariableExpression(Variable $variable): void
+    public function visitVariableExpr(Expression\Variable $variable): void
     {
         if (!$this->scopes->isEmpty() && ($this->scopes->top()[$variable->name->lexeme] ?? null) === false) {
             Plox::error($variable->name, "Can't read local variable in its own initializer.");
@@ -73,19 +58,19 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         $this->resolveLocal($variable, $variable->name);
     }
 
-    public function visitAssignExpression(Assign $assign): void
+    public function visitAssignExpr(Expression\Assign $assign): void
     {
         $this->resolve($assign->value);
         $this->resolveLocal($assign, $assign->name);
     }
 
-    public function visitLogicalExpression(Logical $logical): void
+    public function visitLogicalExpr(Expression\Logical $logical): void
     {
         $this->resolve($logical->left);
         $this->resolve($logical->right);
     }
 
-    public function visitCallExpression(Call $call): void
+    public function visitCallExpr(Expression\Call $call): void
     {
         $this->resolve($call->callee);
         foreach ($call->arguments as $argument) {
@@ -93,17 +78,17 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitExpressionStatement(Expression $expression): void
+    public function visitExpressionStmt(Statement\Expression $expression): void
     {
         $this->resolve($expression->expression);
     }
 
-    public function visitPloxPrintStatement(PloxPrint $ploxPrint): void
+    public function visitPloxPrintStmt(Statement\PloxPrint $ploxPrint): void
     {
         $this->resolve($ploxPrint->expression);
     }
 
-    public function visitPloxVarStatement(PloxVar $ploxVar): void
+    public function visitPloxVarStmt(Statement\PloxVar $ploxVar): void
     {
         $this->declare($ploxVar->name);
         if ($ploxVar->initializer instanceof Expr) {
@@ -112,7 +97,7 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         $this->define($ploxVar->name);
     }
 
-    public function visitBlockStatement(Block $block): void
+    public function visitBlockStmt(Statement\Block $block): void
     {
         $this->beginScope();
         $this->resolveStatements($block->statements);
@@ -120,7 +105,7 @@ class Resolver implements ExpressionVisitor, StatementVisitor
     }
 
     /**
-     * @param list<Statement> $statements
+     * @param list<Stmt> $statements
      */
     public function resolveStatements(array $statements): void
     {
@@ -129,16 +114,16 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         }
     }
 
-    public function visitPloxIfStatement(PloxIf $ploxIf): void
+    public function visitPloxIfStmt(Statement\PloxIf $ploxIf): void
     {
         $this->resolve($ploxIf->condition);
         $this->resolve($ploxIf->thenBranch);
-        if ($ploxIf->elseBranch instanceof Statement) {
+        if ($ploxIf->elseBranch instanceof Stmt) {
             $this->resolve($ploxIf->elseBranch);
         }
     }
 
-    public function visitPloxWhileStatement(PloxWhile $ploxWhile): void
+    public function visitPloxWhileStmt(Statement\PloxWhile $ploxWhile): void
     {
         $this->resolve($ploxWhile->condition);
         $enclosingLoop = $this->currentLoop;
@@ -147,14 +132,14 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         $this->currentLoop = $enclosingLoop;
     }
 
-    public function visitPloxBreakStatement(PloxBreak $ploxBreak): void
+    public function visitPloxBreakStmt(Statement\PloxBreak $ploxBreak): void
     {
         if ($this->currentLoop === LoopType::NONE) {
             Plox::error($ploxBreak->keyword, "Can't break outside of a loop.");
         }
     }
 
-    public function visitPloxFunctionStatement(PloxFunction $ploxFunction): void
+    public function visitPloxFunctionStmt(Statement\PloxFunction $ploxFunction): void
     {
         $this->declare($ploxFunction->name);
         $this->define($ploxFunction->name);
@@ -162,7 +147,7 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         $this->resolveFunction($ploxFunction, FunctionType::FUNCTION);
     }
 
-    public function visitPloxReturnStatement(PloxReturn $ploxReturn): void
+    public function visitPloxReturnStmt(Statement\PloxReturn $ploxReturn): void
     {
         if ($this->currentFunction === FunctionType::NONE) {
             Plox::error($ploxReturn->keyword, "Can't return from top-level code.");
@@ -170,6 +155,12 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         if ($ploxReturn->value instanceof Expr) {
             $this->resolve($ploxReturn->value);
         }
+    }
+
+    public function visitPloxClassStmt(Statement\PloxClass $ploxClass): void
+    {
+        $this->declare($ploxClass->name);
+        $this->define($ploxClass->name);
     }
 
     private function resolveLocal(Expr $expression, Token $name): void
@@ -204,7 +195,7 @@ class Resolver implements ExpressionVisitor, StatementVisitor
         $this->scopes->push($scope);
     }
 
-    private function resolve(Statement|Expr $statement): void
+    private function resolve(Stmt|Expr $statement): void
     {
         $statement->accept($this);
     }

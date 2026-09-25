@@ -9,7 +9,7 @@ use PHPUnit\Framework\Attributes\CoversClass;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\Attributes\Small;
 use PHPUnit\Framework\TestCase;
-use Plox\Ast\ExpressionVisitor;
+use Plox\Ast\ExprVisitor;
 use Plox\Ast\Node\Binary;
 use Plox\Ast\Node\Grouping;
 use Plox\Ast\Node\Literal;
@@ -28,7 +28,7 @@ use Plox\TokenType;
 final class VisitorPrinterTest extends TestCase
 {
     /**
-     * @return Generator<array{printerClass:class-string<ExpressionVisitor<string>>,example1:string,example2:string}>
+     * @return Generator<array{printerClass:class-string<ExprVisitor<string>>,example1:string,example2:string}>
      */
     public static function providePrintVisitors(): Generator
     {
@@ -37,7 +37,7 @@ final class VisitorPrinterTest extends TestCase
     }
 
     /**
-     * @param class-string<ExpressionVisitor<string>> $printerClass
+     * @param class-string<ExprVisitor<string>> $printerClass
      */
     #[DataProvider('providePrintVisitors')]
     public function testPrintAst(string $printerClass, string $example1, string $example2): void
