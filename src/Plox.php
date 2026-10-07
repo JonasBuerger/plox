@@ -12,6 +12,22 @@ final class Plox
     public static bool $hadError = false;
     private static Interpreter $interpreter;
 
+    public static function error(Token $token, string $message): void
+    {
+        if ($token->type == TokenType::EOF) {
+            self::report($token->line, ' at end', $message);
+        } else {
+            self::report($token->line, " at '" . $token->lexeme . "'", $message);
+        }
+    }
+
+    public static function runFile(string $path): int
+    {
+        self::run(file_get_contents($path));
+
+        return self::$hadError ? ExitCode::EX_SOFTWARE->value : ExitCode::SUCCESS->value;
+    }
+
     public static function runPrompt(): int
     {
         $stdin = fopen('php://stdin', 'r');
@@ -28,20 +44,10 @@ final class Plox
         return ExitCode::SUCCESS->value;
     }
 
-    public static function runFile(string $path): int
+    private static function report(int $line, string $where, string $message): void
     {
-        self::run(file_get_contents($path));
-
-        return self::$hadError ? ExitCode::EX_SOFTWARE->value : ExitCode::SUCCESS->value;
-    }
-
-    public static function error(Token $token, string $message): void
-    {
-        if ($token->type == TokenType::EOF) {
-            self::report($token->line, ' at end', $message);
-        } else {
-            self::report($token->line, " at '" . $token->lexeme . "'", $message);
-        }
+        echo '[line ', $line, '] Error', $where, ': ', $message, PHP_EOL;
+        self::$hadError = true;
     }
 
     private static function run(string $code): void
@@ -60,11 +66,5 @@ final class Plox
                 }
             }
         }
-    }
-
-    private static function report(int $line, string $where, string $message): void
-    {
-        echo '[line ', $line, '] Error', $where, ': ', $message, PHP_EOL;
-        self::$hadError = true;
     }
 }

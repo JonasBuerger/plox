@@ -13,9 +13,19 @@ use Plox\Ast\Node\Expr as Expression;
  */
 class AstPrinter implements ExprVisitor
 {
+    public function visitAssignExpr(Expression\Assign $assign): string
+    {
+        return $this->parenthesize('assign ' . $assign->name->lexeme, $assign->value->accept($this));
+    }
+
     public function visitBinaryExpr(Expression\Binary $binary): string
     {
         return $this->parenthesize($binary->operator->lexeme, $binary->left, $binary->right);
+    }
+
+    public function visitCallExpr(Expression\Call $call): string
+    {
+        return $this->parenthesize('call', $call->callee->accept($this), ...$call->arguments);
     }
 
     public function visitGroupingExpr(Expression\Grouping $grouping): string
@@ -34,6 +44,11 @@ class AstPrinter implements ExprVisitor
         };
     }
 
+    public function visitLogicalExpr(Expression\Logical $logical): string
+    {
+        return $this->parenthesize($logical->operator->lexeme, $logical->left, $logical->right);
+    }
+
     public function visitUnaryExpr(Expression\Unary $unary): string
     {
         return $this->parenthesize($unary->operator->lexeme, $unary->right);
@@ -42,21 +57,6 @@ class AstPrinter implements ExprVisitor
     public function visitVariableExpr(Expression\Variable $variable): string
     {
         return $this->parenthesize('get ' . $variable->name->lexeme);
-    }
-
-    public function visitAssignExpr(Expression\Assign $assign): string
-    {
-        return $this->parenthesize('assign ' . $assign->name->lexeme, $assign->value->accept($this));
-    }
-
-    public function visitLogicalExpr(Expression\Logical $logical): string
-    {
-        return $this->parenthesize($logical->operator->lexeme, $logical->left, $logical->right);
-    }
-
-    public function visitCallExpr(Expression\Call $call): string
-    {
-        return $this->parenthesize('call', $call->callee->accept($this), ...$call->arguments);
     }
 
     private function parenthesize(string $name, Expr ...$expressions): string

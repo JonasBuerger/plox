@@ -9,10 +9,10 @@ use Stringable;
 
 interface PloxCallable extends Stringable
 {
+    public function arity(): int;
+
     /**
      * @param list<mixed> $arguments
      */
     public function call(Interpreter $interpreter, array $arguments): mixed;
-
-    public function arity(): int;
 }

@@ -13,13 +13,13 @@ class ReturnThrowable extends RuntimeException
         parent::__construct();
     }
 
-    public function getValue(): mixed
-    {
-        return $this->value;
-    }
-
     public function getReturnToken(): mixed
     {
         return $this->token;
+    }
+
+    public function getValue(): mixed
+    {
+        return $this->value;
     }
 }

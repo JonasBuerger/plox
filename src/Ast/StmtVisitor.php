@@ -23,32 +23,12 @@ interface StmtVisitor
     /**
      * @return T
      */
-    public function visitExpressionStmt(Expression $expression);
-
-    /**
-     * @return T
-     */
-    public function visitPloxPrintStmt(PloxPrint $ploxPrint);
-
-    /**
-     * @return T
-     */
-    public function visitPloxVarStmt(PloxVar $ploxVar);
-
-    /**
-     * @return T
-     */
     public function visitBlockStmt(Block $block);
 
     /**
      * @return T
      */
-    public function visitPloxIfStmt(PloxIf $ploxIf);
-
-    /**
-     * @return T
-     */
-    public function visitPloxWhileStmt(PloxWhile $ploxWhile);
+    public function visitExpressionStmt(Expression $expression);
 
     /**
      * @return T
@@ -58,7 +38,22 @@ interface StmtVisitor
     /**
      * @return T
      */
+    public function visitPloxClassStmt(PloxClass $ploxClass);
+
+    /**
+     * @return T
+     */
     public function visitPloxFunctionStmt(PloxFunction $ploxFunction);
+
+    /**
+     * @return T
+     */
+    public function visitPloxIfStmt(PloxIf $ploxIf);
+
+    /**
+     * @return T
+     */
+    public function visitPloxPrintStmt(PloxPrint $ploxPrint);
 
     /**
      * @return T
@@ -68,5 +63,10 @@ interface StmtVisitor
     /**
      * @return T
      */
-    public function visitPloxClassStmt(PloxClass $ploxClass);
+    public function visitPloxVarStmt(PloxVar $ploxVar);
+
+    /**
+     * @return T
+     */
+    public function visitPloxWhileStmt(PloxWhile $ploxWhile);
 }

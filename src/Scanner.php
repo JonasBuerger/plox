@@ -28,13 +28,13 @@ class Scanner
         'while' => TokenType::WHILE,
         'break' => TokenType::BREAK,
     ];
+    private int $current = 0;
+    private int $line = 1;
+    private int $start = 0;
     /**
      * @var list<Token>
      */
     private array $tokens = [];
-    private int $start = 0;
-    private int $current = 0;
-    private int $line = 1;
 
     public function __construct(private readonly string $source)
     {
@@ -54,9 +54,9 @@ class Scanner
         return $this->tokens;
     }
 
-    private function isAtEnd(): bool
+    private function addToken(TokenType $type, string|float|null $literal = null): void
     {
-        return $this->current >= strlen($this->source);
+        $this->tokens[] = new Token($type, substr($this->source, $this->start, $this->current - $this->start), $literal, $this->line);
     }
 
     private function advance(): string
@@ -64,9 +64,71 @@ class Scanner
         return substr($this->source, $this->current++, 1);
     }
 
-    private function addToken(TokenType $type, string|float|null $literal = null): void
+    private function identifier(): void
     {
-        $this->tokens[] = new Token($type, substr($this->source, $this->start, $this->current - $this->start), $literal, $this->line);
+        while ($this->isAlphaNumeric($this->peek())) {
+            ++$this->current;
+        }
+        $text = substr($this->source, $this->start, $this->current - $this->start);
+        $this->addToken(self::$keywords[$text] ?? TokenType::IDENTIFIER);
+    }
+
+    private function isAlphaNumeric(string $char): bool
+    {
+        return ctype_alnum($char) || $char === '_';
+    }
+
+    private function isAtEnd(): bool
+    {
+        return $this->current >= strlen($this->source);
+    }
+
+    private function match(string $expected): bool
+    {
+        if ($this->isAtEnd()) {
+            return false;
+        }
+        if (substr($this->source, $this->current, 1) !== $expected) {
+            return false;
+        }
+        ++$this->current;
+
+        return true;
+    }
+
+    private function number(): void
+    {
+        while (ctype_digit($this->peek())) {
+            ++$this->current;
+        }
+        // Look for a fractional part.
+        if ($this->peek() === '.' && ctype_digit($this->peekNext())) {
+            // Consume the "."
+            ++$this->current;
+
+            while (ctype_digit($this->peek())) {
+                ++$this->current;
+            }
+        }
+        $this->addToken(TokenType::NUMBER, floatval(substr($this->source, $this->start, $this->current - $this->start)));
+    }
+
+    private function peek(): string
+    {
+        if ($this->isAtEnd()) {
+            return "\0";
+        }
+
+        return substr($this->source, $this->current, 1);
+    }
+
+    private function peekNext(): string
+    {
+        if ($this->current + 1 >= strlen($this->source)) {
+            return '\0';
+        }
+
+        return substr($this->source, $this->current + 1, 1);
     }
 
     private function scanToken(): void
@@ -149,37 +211,6 @@ class Scanner
         }
     }
 
-    private function match(string $expected): bool
-    {
-        if ($this->isAtEnd()) {
-            return false;
-        }
-        if (substr($this->source, $this->current, 1) !== $expected) {
-            return false;
-        }
-        ++$this->current;
-
-        return true;
-    }
-
-    private function peek(): string
-    {
-        if ($this->isAtEnd()) {
-            return "\0";
-        }
-
-        return substr($this->source, $this->current, 1);
-    }
-
-    private function peekNext(): string
-    {
-        if ($this->current + 1 >= strlen($this->source)) {
-            return '\0';
-        }
-
-        return substr($this->source, $this->current + 1, 1);
-    }
-
     private function string(): void
     {
         while ($this->peek() !== '"' && !$this->isAtEnd()) {
@@ -195,36 +226,5 @@ class Scanner
         }
         ++$this->current;
         $this->addToken(TokenType::STRING, substr($this->source, $this->start + 1, $this->current - $this->start - 2));
-    }
-
-    private function number(): void
-    {
-        while (ctype_digit($this->peek())) {
-            ++$this->current;
-        }
-        // Look for a fractional part.
-        if ($this->peek() === '.' && ctype_digit($this->peekNext())) {
-            // Consume the "."
-            ++$this->current;
-
-            while (ctype_digit($this->peek())) {
-                ++$this->current;
-            }
-        }
-        $this->addToken(TokenType::NUMBER, floatval(substr($this->source, $this->start, $this->current - $this->start)));
-    }
-
-    private function identifier(): void
-    {
-        while ($this->isAlphaNumeric($this->peek())) {
-            ++$this->current;
-        }
-        $text = substr($this->source, $this->start, $this->current - $this->start);
-        $this->addToken(self::$keywords[$text] ?? TokenType::IDENTIFIER);
-    }
-
-    private function isAlphaNumeric(string $char): bool
-    {
-        return ctype_alnum($char) || $char === '_';
     }
 }

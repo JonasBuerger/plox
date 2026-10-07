@@ -18,13 +18,13 @@ class RuntimeClass implements PloxCallable
         return "<class '{$this->name}'>";
     }
 
-    public function call(Interpreter $interpreter, array $arguments): mixed
-    {
-        return new Instance($this);
-    }
-
     public function arity(): int
     {
         return 0;
+    }
+
+    public function call(Interpreter $interpreter, array $arguments): mixed
+    {
+        return new Instance($this);
     }
 }

@@ -21,7 +21,17 @@ interface ExprVisitor
     /**
      * @return T
      */
+    public function visitAssignExpr(Assign $assign);
+
+    /**
+     * @return T
+     */
     public function visitBinaryExpr(Binary $binary);
+
+    /**
+     * @return T
+     */
+    public function visitCallExpr(Call $call);
 
     /**
      * @return T
@@ -36,25 +46,15 @@ interface ExprVisitor
     /**
      * @return T
      */
+    public function visitLogicalExpr(Logical $logical);
+
+    /**
+     * @return T
+     */
     public function visitUnaryExpr(Unary $unary);
 
     /**
      * @return T
      */
     public function visitVariableExpr(Variable $variable);
-
-    /**
-     * @return T
-     */
-    public function visitAssignExpr(Assign $assign);
-
-    /**
-     * @return T
-     */
-    public function visitLogicalExpr(Logical $logical);
-
-    /**
-     * @return T
-     */
-    public function visitCallExpr(Call $call);
 }

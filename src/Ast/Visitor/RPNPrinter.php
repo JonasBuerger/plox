@@ -12,9 +12,24 @@ use Plox\Ast\Node\Expr as Expression;
  */
 class RPNPrinter implements ExprVisitor
 {
+    public function visitAssignExpr(Expression\Assign $assign): string
+    {
+        return $assign->value->accept($this) . ' ' . $assign->name->lexeme . ' decl';
+    }
+
     public function visitBinaryExpr(Expression\Binary $binary): string
     {
         return $binary->left->accept($this) . ' ' . $binary->right->accept($this) . ' ' . $binary->operator->lexeme;
+    }
+
+    public function visitCallExpr(Expression\Call $call): string
+    {
+        $rpn = $call->callee->accept($this) . ' ';
+        foreach ($call->arguments as $arg) {
+            $rpn .= ' ' . $arg->accept($this) . ' stack';
+        }
+
+        return $rpn . ' call';
     }
 
     public function visitGroupingExpr(Expression\Grouping $grouping): string
@@ -33,6 +48,11 @@ class RPNPrinter implements ExprVisitor
         };
     }
 
+    public function visitLogicalExpr(Expression\Logical $logical): string
+    {
+        return $logical->left->accept($this) . ' ' . $logical->right->accept($this) . ' ' . $logical->operator->lexeme;
+    }
+
     public function visitUnaryExpr(Expression\Unary $unary): string
     {
         return $unary->right->accept($this) . ' #' . $unary->operator->lexeme;
@@ -41,25 +61,5 @@ class RPNPrinter implements ExprVisitor
     public function visitVariableExpr(Expression\Variable $variable): string
     {
         return $variable->name . ' get';
-    }
-
-    public function visitAssignExpr(Expression\Assign $assign): string
-    {
-        return $assign->value->accept($this) . ' ' . $assign->name->lexeme . ' decl';
-    }
-
-    public function visitLogicalExpr(Expression\Logical $logical): string
-    {
-        return $logical->left->accept($this) . ' ' . $logical->right->accept($this) . ' ' . $logical->operator->lexeme;
-    }
-
-    public function visitCallExpr(Expression\Call $call): string
-    {
-        $rpn = $call->callee->accept($this) . ' ';
-        foreach ($call->arguments as $arg) {
-            $rpn .= ' ' . $arg->accept($this) . ' stack';
-        }
-
-        return $rpn . ' call';
     }
 }
