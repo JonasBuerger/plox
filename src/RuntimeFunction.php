@@ -2,7 +2,7 @@
 
 namespace Plox;
 
-use Plox\Ast\Node\PloxFunction;
+use Plox\Ast\Node\Stmt\PloxFunction;
 use Plox\Ast\Visitor\Interpreter;
 
 class RuntimeFunction implements PloxCallable

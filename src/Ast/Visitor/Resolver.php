@@ -210,7 +210,7 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->scopes->pop();
     }
 
-    private function resolveFunction(PloxFunction $ploxFunction, FunctionType $type): void
+    private function resolveFunction(Statement\PloxFunction $ploxFunction, FunctionType $type): void
     {
         $enclosingFunction = $this->currentFunction;
         $this->currentFunction = $type;
