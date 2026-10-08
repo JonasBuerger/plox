@@ -11,6 +11,7 @@ use Plox\Ast\Node\Expr\Get;
 use Plox\Ast\Node\Expr\Grouping;
 use Plox\Ast\Node\Expr\Literal;
 use Plox\Ast\Node\Expr\Logical;
+use Plox\Ast\Node\Expr\PloxThis;
 use Plox\Ast\Node\Expr\Set;
 use Plox\Ast\Node\Expr\Unary;
 use Plox\Ast\Node\Expr\Variable;
@@ -59,6 +60,11 @@ interface ExprVisitor
      * @return T
      */
     public function visitSetExpr(Set $set);
+
+    /**
+     * @return T
+     */
+    public function visitPloxThisExpr(PloxThis $ploxThis);
 
     /**
      * @return T

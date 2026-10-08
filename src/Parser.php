@@ -45,7 +45,8 @@ final class Parser
             $value = $this->assignment();
             if ($expression instanceof Expression\Variable) {
                 return new Expression\Assign($expression->name, $value);
-            } elseif ($expression instanceof Expression\Get) {
+            }
+            if ($expression instanceof Expression\Get) {
                 return new Expression\Set($expression->object, $expression->name, $value);
             }
 
@@ -387,6 +388,9 @@ final class Parser
         }
         if ($this->match(TokenType::NUMBER, TokenType::STRING)) {
             return new Expression\Literal($this->previous()->literal);
+        }
+        if ($this->match(TokenType::THIS)) {
+            return new Expression\PloxThis($this->previous());
         }
         if ($this->match(TokenType::IDENTIFIER)) {
             return new Expression\Variable($this->previous());

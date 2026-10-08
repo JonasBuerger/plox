@@ -21,6 +21,7 @@ class Resolver implements ExprVisitor, StmtVisitor
 {
     private FunctionType $currentFunction = FunctionType::NONE;
     private LoopType $currentLoop = LoopType::NONE;
+    private ClassType $currentClass = ClassType::NONE;
 
     public function __construct(
         private readonly Interpreter $interpreter,
@@ -160,12 +161,20 @@ class Resolver implements ExprVisitor, StmtVisitor
 
     public function visitPloxClassStmt(Statement\PloxClass $ploxClass): void
     {
+        $enclosingClass = $this->currentClass;
+        $this->currentClass = ClassType::IN_CLASS;
         $this->declare($ploxClass->name);
         $this->define($ploxClass->name);
+        $this->beginScope();
+        $scope = $this->scopes->pop();
+        $scope['this'] = true;
+        $this->scopes->push($scope);
 
         foreach ($ploxClass->methods as $method) {
             $this->resolveFunction($method, FunctionType::METHOD);
         }
+        $this->endScope();
+        $this->currentClass = $enclosingClass;
     }
 
     public function visitGetExpr(Expression\Get $get): void
@@ -173,10 +182,19 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->resolve($get->object);
     }
 
-    public function visitSetExpr(Set $set)
+    public function visitSetExpr(Set $set): void
     {
         $this->resolve($set->value);
         $this->resolve($set->object);
+    }
+
+    public function visitPloxThisExpr(Expression\PloxThis $ploxThis): void
+    {
+        if($this->currentClass === ClassType::NONE){
+            Plox::error($ploxThis->keyword,  "Can't use 'this' outside of a class.");
+            return;
+        }
+        $this->resolveLocal($ploxThis, $ploxThis->keyword);
     }
 
     private function resolveLocal(Expr $expression, Token $name): void

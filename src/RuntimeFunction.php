@@ -39,4 +39,12 @@ class RuntimeFunction implements PloxCallable
 
         return null;
     }
+
+    public function bind(Instance $instance): self
+    {
+        $environment = new Environment($this->closure);
+        $environment->define('this', $instance);
+
+        return new RuntimeFunction($this->declaration, $environment);
+    }
 }

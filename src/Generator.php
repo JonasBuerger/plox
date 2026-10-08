@@ -22,6 +22,7 @@ class Generator
             'Literal' => ['value' => 'mixed'],
             'Logical' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
             'Set' => ['object' => Expr::class, 'name' => Token::class, 'value' => Expr::class],
+            'PloxThis' => ['keyword' => Token::class],
             'Unary' => ['operator' => Token::class, 'right' => Expr::class],
             'Variable' => ['name' => Token::class],
         ],
