@@ -237,7 +237,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
     }
 
     #[Override]
-    public function visitPloxThisExpr(Expression\PloxThis $ploxThis)
+    public function visitPloxThisExpr(Expression\PloxThis $ploxThis): mixed
     {
         return $this->lookupVariable($ploxThis->keyword, $ploxThis);
     }
@@ -318,7 +318,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
     #[Override]
     public function visitPloxFunctionStmt(Statement\PloxFunction $ploxFunction): void
     {
-        $function = new RuntimeFunction($ploxFunction, $this->environment);
+        $function = new RuntimeFunction($ploxFunction, $this->environment, false);
         $this->environment->define($ploxFunction->name->lexeme, $function);
     }
 
@@ -346,7 +346,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
             /**
              * @var Statement\PloxFunction $method
              */
-            $function = new RuntimeFunction($method, $this->environment);
+            $function = new RuntimeFunction($method, $this->environment, $method->name->lexeme === 'init');
             $methods[$method->name->lexeme] = $function;
         }
         $class = new RuntimeClass($ploxClass->name->lexeme, $methods);

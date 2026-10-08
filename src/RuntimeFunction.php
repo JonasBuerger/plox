@@ -5,11 +5,12 @@ namespace Plox;
 use Plox\Ast\Node\Stmt\PloxFunction;
 use Plox\Ast\Visitor\Interpreter;
 
-class RuntimeFunction implements PloxCallable
+readonly class RuntimeFunction implements PloxCallable
 {
     public function __construct(
-        private readonly PloxFunction $declaration,
-        private readonly Environment $closure,
+        private PloxFunction $declaration,
+        private Environment $closure,
+        private bool $isInitializer,
     ) {
     }
 
@@ -34,7 +35,15 @@ class RuntimeFunction implements PloxCallable
         try {
             $interpreter->executeBlock($this->declaration->body, $environment);
         } catch (ReturnThrowable $return) {
+            if ($this->isInitializer) {
+                return $this->closure->getAt(0, 'this');
+            }
+
             return $return->getValue();
+        }
+
+        if ($this->isInitializer) {
+            return $this->closure->getAt(0, 'this');
         }
 
         return null;
@@ -45,6 +54,6 @@ class RuntimeFunction implements PloxCallable
         $environment = new Environment($this->closure);
         $environment->define('this', $instance);
 
-        return new RuntimeFunction($this->declaration, $environment);
+        return new RuntimeFunction($this->declaration, $environment, $this->isInitializer);
     }
 }

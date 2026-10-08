@@ -24,11 +24,21 @@ class RuntimeClass implements PloxCallable
 
     public function arity(): int
     {
+        if (array_key_exists('init', $this->methods)) {
+            return $this->methods['init']->arity();
+        }
+
         return 0;
     }
 
     public function call(Interpreter $interpreter, array $arguments): mixed
     {
-        return new Instance($this);
+        $instance = new Instance($this);
+        if (array_key_exists('init', $this->methods)) {
+            $initializer = $this->methods['init']->bind($instance);
+            $initializer->call($interpreter, $arguments);
+        }
+
+        return $instance;
     }
 }

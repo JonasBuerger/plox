@@ -154,6 +154,9 @@ class Resolver implements ExprVisitor, StmtVisitor
         if ($this->currentFunction === FunctionType::NONE) {
             Plox::error($ploxReturn->keyword, "Can't return from top-level code.");
         }
+        if ($this->currentFunction === FunctionType::INITIALIZER) {
+            Plox::error($ploxReturn->keyword, "Can't return a value from an initializer.");
+        }
         if ($ploxReturn->value instanceof Expr) {
             $this->resolve($ploxReturn->value);
         }
@@ -171,7 +174,11 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->scopes->push($scope);
 
         foreach ($ploxClass->methods as $method) {
-            $this->resolveFunction($method, FunctionType::METHOD);
+            /**
+             * @var Statement\PloxFunction $method
+             */
+            $type = $method->name->lexeme === 'init' ? FunctionType::INITIALIZER : FunctionType::METHOD;
+            $this->resolveFunction($method, $type);
         }
         $this->endScope();
         $this->currentClass = $enclosingClass;
@@ -190,8 +197,9 @@ class Resolver implements ExprVisitor, StmtVisitor
 
     public function visitPloxThisExpr(Expression\PloxThis $ploxThis): void
     {
-        if($this->currentClass === ClassType::NONE){
-            Plox::error($ploxThis->keyword,  "Can't use 'this' outside of a class.");
+        if ($this->currentClass === ClassType::NONE) {
+            Plox::error($ploxThis->keyword, "Can't use 'this' outside of a class.");
+
             return;
         }
         $this->resolveLocal($ploxThis, $ploxThis->keyword);
