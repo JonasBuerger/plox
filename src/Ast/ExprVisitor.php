@@ -7,9 +7,11 @@ namespace Plox\Ast;
 use Plox\Ast\Node\Expr\Assign;
 use Plox\Ast\Node\Expr\Binary;
 use Plox\Ast\Node\Expr\Call;
+use Plox\Ast\Node\Expr\Get;
 use Plox\Ast\Node\Expr\Grouping;
 use Plox\Ast\Node\Expr\Literal;
 use Plox\Ast\Node\Expr\Logical;
+use Plox\Ast\Node\Expr\Set;
 use Plox\Ast\Node\Expr\Unary;
 use Plox\Ast\Node\Expr\Variable;
 
@@ -36,6 +38,11 @@ interface ExprVisitor
     /**
      * @return T
      */
+    public function visitGetExpr(Get $get);
+
+    /**
+     * @return T
+     */
     public function visitGroupingExpr(Grouping $grouping);
 
     /**
@@ -47,6 +54,11 @@ interface ExprVisitor
      * @return T
      */
     public function visitLogicalExpr(Logical $logical);
+
+    /**
+     * @return T
+     */
+    public function visitSetExpr(Set $set);
 
     /**
      * @return T

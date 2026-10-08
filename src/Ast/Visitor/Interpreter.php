@@ -2,14 +2,18 @@
 
 namespace Plox\Ast\Visitor;
 
+use Override;
 use Plox\Ast\Expr;
 use Plox\Ast\ExprVisitor;
 use Plox\Ast\Node\Expr as Expression;
+use Plox\Ast\Node\Expr\Get;
+use Plox\Ast\Node\Expr\Set;
 use Plox\Ast\Node\Stmt as Statement;
 use Plox\Ast\Stmt;
 use Plox\Ast\StmtVisitor;
 use Plox\BreakThrowable;
 use Plox\Environment;
+use Plox\Instance;
 use Plox\Plox;
 use Plox\PloxCallable;
 use Plox\ReturnThrowable;
@@ -73,6 +77,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
+    #[Override]
     public function visitBinaryExpr(Expression\Binary $binary): mixed
     {
         $left = $this->evaluate($binary->left);
@@ -121,16 +126,19 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
+    #[Override]
     public function visitGroupingExpr(Expression\Grouping $grouping): mixed
     {
         return $this->evaluate($grouping->expression);
     }
 
+    #[Override]
     public function visitLiteralExpr(Expression\Literal $literal): mixed
     {
         return $literal->value;
     }
 
+    #[Override]
     public function visitUnaryExpr(Expression\Unary $unary): string|float|bool
     {
         $value = $this->evaluate($unary->right);
@@ -147,31 +155,13 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
-    public function visitExpressionStmt(Statement\Expression $expression): void
-    {
-        $this->evaluate($expression->expression);
-    }
-
-    public function visitPloxPrintStmt(Statement\PloxPrint $ploxPrint): void
-    {
-        $value = $this->evaluate($ploxPrint->expression);
-        echo $this->stringify($value), PHP_EOL;
-    }
-
+    #[Override]
     public function visitVariableExpr(Expression\Variable $variable): mixed
     {
         return $this->lookupVariable($variable->name, $variable);
     }
 
-    public function visitPloxVarStmt(Statement\PloxVar $ploxVar): void
-    {
-        $value = null;
-        if ($ploxVar->initializer instanceof Expr) {
-            $value = $this->evaluate($ploxVar->initializer);
-        }
-        $this->environment->define($ploxVar->name->lexeme, $value);
-    }
-
+    #[Override]
     public function visitAssignExpr(Expression\Assign $assign): mixed
     {
         $value = $this->evaluate($assign->value);
@@ -185,6 +175,91 @@ class Interpreter implements ExprVisitor, StmtVisitor
         return $value;
     }
 
+    #[Override]
+    public function visitLogicalExpr(Expression\Logical $logical): mixed
+    {
+        $left = $this->evaluate($logical->left);
+
+        if ($logical->operator->type === TokenType::OR) {
+            if ($this->isTruthy($left)) {
+                return $left;
+            }
+        } else {
+            if (!$this->isTruthy($left)) {
+                return $left;
+            }
+        }
+
+        return $this->evaluate($logical->right);
+    }
+
+    #[Override]
+    public function visitCallExpr(Expression\Call $call): mixed
+    {
+        $callee = $this->evaluate($call->callee);
+        $arguments = [];
+        foreach ($call->arguments as $argument) {
+            $arguments[] = $this->evaluate($argument);
+        }
+        if ($callee instanceof PloxCallable) {
+            $argumentCount = count($arguments);
+            if ($argumentCount !== $callee->arity()) {
+                throw new RuntimeException($call->paren, "Expected {$callee->arity()} arguments but got $argumentCount.");
+            }
+
+            return $callee->call($this, $arguments);
+        }
+        throw new RuntimeException($call->paren, 'Can only call functions and classes.');
+    }
+
+    #[Override]
+    public function visitGetExpr(Get $get): mixed
+    {
+        $object = $this->evaluate($get->object);
+        if ($object instanceof Instance) {
+            return $object->get($get->name);
+        }
+
+        throw new RuntimeException($get->name, 'Only instances have properties.');
+    }
+
+    #[Override]
+    public function visitSetExpr(Set $set)
+    {
+        $object = $this->evaluate($set->object);
+        if (!$object instanceof Instance) {
+            throw new RuntimeException($set->name, 'Only instances can have fields.');
+        }
+        $value = $this->evaluate($set->value);
+        $object->set($set->name, $value);
+
+        return $value;
+    }
+
+    #[Override]
+    public function visitExpressionStmt(Statement\Expression $expression): void
+    {
+        $this->evaluate($expression->expression);
+    }
+
+    #[Override]
+    public function visitPloxPrintStmt(Statement\PloxPrint $ploxPrint): void
+    {
+        $value = $this->evaluate($ploxPrint->expression);
+        echo $this->stringify($value), PHP_EOL;
+    }
+
+    #[Override]
+    public function visitPloxVarStmt(Statement\PloxVar $ploxVar): void
+    {
+        $value = null;
+        if ($ploxVar->initializer instanceof Expr) {
+            $value = $this->evaluate($ploxVar->initializer);
+        }
+        $this->environment->define($ploxVar->name->lexeme, $value);
+    }
+
+    #[Override]
     public function visitBlockStmt(Statement\Block $block): void
     {
         $this->executeBlock($block->statements, new Environment($this->environment));
@@ -206,6 +281,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
+    #[Override]
     public function visitPloxIfStmt(Statement\PloxIf $ploxIf): void
     {
         $condition = $this->evaluate($ploxIf->condition);
@@ -216,6 +292,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
+    #[Override]
     public function visitPloxWhileStmt(Statement\PloxWhile $ploxWhile): void
     {
         try {
@@ -226,52 +303,20 @@ class Interpreter implements ExprVisitor, StmtVisitor
         }
     }
 
-    public function visitLogicalExpr(Expression\Logical $logical): mixed
-    {
-        $left = $this->evaluate($logical->left);
-
-        if ($logical->operator->type === TokenType::OR) {
-            if ($this->isTruthy($left)) {
-                return $left;
-            }
-        } else {
-            if (!$this->isTruthy($left)) {
-                return $left;
-            }
-        }
-
-        return $this->evaluate($logical->right);
-    }
-
+    #[Override]
     public function visitPloxBreakStmt(Statement\PloxBreak $ploxBreak): void
     {
         throw new BreakThrowable($ploxBreak->keyword);
     }
 
-    public function visitCallExpr(Expression\Call $call): mixed
-    {
-        $callee = $this->evaluate($call->callee);
-        $arguments = [];
-        foreach ($call->arguments as $argument) {
-            $arguments[] = $this->evaluate($argument);
-        }
-        if ($callee instanceof PloxCallable) {
-            $argumentCount = count($arguments);
-            if ($argumentCount !== $callee->arity()) {
-                throw new RuntimeException($call->paren, "Expected {$callee->arity()} arguments but got $argumentCount.");
-            }
-
-            return $callee->call($this, $arguments);
-        }
-        throw new RuntimeException($call->paren, 'Can only call functions and classes.');
-    }
-
+    #[Override]
     public function visitPloxFunctionStmt(Statement\PloxFunction $ploxFunction): void
     {
         $function = new RuntimeFunction($ploxFunction, $this->environment);
         $this->environment->define($ploxFunction->name->lexeme, $function);
     }
 
+    #[Override]
     public function visitPloxReturnStmt(Statement\PloxReturn $ploxReturn): never
     {
         $value = null;
@@ -286,10 +331,19 @@ class Interpreter implements ExprVisitor, StmtVisitor
         $this->locals[spl_object_id($expression)] = $depth;
     }
 
+    #[\Override]
     public function visitPloxClassStmt(Statement\PloxClass $ploxClass): void
     {
         $this->environment->define($ploxClass->name->lexeme, null);
-        $class = new RuntimeClass($ploxClass->name->lexeme);
+        $methods = [];
+        foreach ($ploxClass->methods as $method){
+            /**
+             * @var Statement\PloxFunction $method
+             */
+            $function = new RuntimeFunction($method,$this->environment);
+            $methods[$method->name->lexeme] = $function;
+        }
+        $class = new RuntimeClass($ploxClass->name->lexeme, $methods);
         $this->environment->assign($ploxClass->name, $class);
     }
 

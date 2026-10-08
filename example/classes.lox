@@ -13,3 +13,11 @@ var b = Breakfast();
 b.cook();
 
 b.serve("you cheeky bastard");
+
+class Bacon {
+  eat() {
+    print "Crunch crunch crunch!";
+  }
+}
+
+Bacon().eat(); // Prints "Crunch crunch crunch!".

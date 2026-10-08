@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Plox;
 
+use Plox\Ast\Expr;
 use Plox\Ast\Node\Expr as Expression;
 use Plox\Ast\Node\Stmt as Statement;
-use Plox\Ast\Expr;
 use Plox\Ast\Stmt;
 
 final class Parser
@@ -45,6 +45,8 @@ final class Parser
             $value = $this->assignment();
             if ($expression instanceof Expression\Variable) {
                 return new Expression\Assign($expression->name, $value);
+            } elseif ($expression instanceof Expression\Get) {
+                return new Expression\Set($expression->object, $expression->name, $value);
             }
 
             $this->error($equals, 'Invalid assignment target.');
@@ -86,6 +88,9 @@ final class Parser
         while (true) {
             if ($this->match(TokenType::LEFT_PAREN)) {
                 $expression = $this->finishCall($expression);
+            } elseif ($this->match(TokenType::DOT)) {
+                $name = $this->consume(TokenType::IDENTIFIER, "Expect property name after '.'.");
+                $expression = new Expression\Get($expression, $name);
             } else {
                 break;
             }

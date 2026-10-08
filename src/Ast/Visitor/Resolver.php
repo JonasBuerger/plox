@@ -5,6 +5,7 @@ namespace Plox\Ast\Visitor;
 use Plox\Ast\Expr;
 use Plox\Ast\ExprVisitor;
 use Plox\Ast\Node\Expr as Expression;
+use Plox\Ast\Node\Expr\Set;
 use Plox\Ast\Node\Stmt as Statement;
 use Plox\Ast\Stmt;
 use Plox\Ast\StmtVisitor;
@@ -161,6 +162,21 @@ class Resolver implements ExprVisitor, StmtVisitor
     {
         $this->declare($ploxClass->name);
         $this->define($ploxClass->name);
+
+        foreach ($ploxClass->methods as $method) {
+            $this->resolveFunction($method, FunctionType::METHOD);
+        }
+    }
+
+    public function visitGetExpr(Expression\Get $get): void
+    {
+        $this->resolve($get->object);
+    }
+
+    public function visitSetExpr(Set $set)
+    {
+        $this->resolve($set->value);
+        $this->resolve($set->object);
     }
 
     private function resolveLocal(Expr $expression, Token $name): void
@@ -223,15 +239,4 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->endScope();
         $this->currentFunction = $enclosingFunction;
     }
-}
-
-enum FunctionType
-{
-    case NONE;
-    case FUNCTION;
-}
-enum LoopType
-{
-    case NONE;
-    case WHILE;
 }

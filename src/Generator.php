@@ -14,29 +14,28 @@ class Generator
      */
     private static array $astNodes = [
         'Expr' => [
+            'Assign' => ['name' => Token::class, 'value' => Expr::class],
             'Binary' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
+            'Call' => ['callee' => Expr::class, 'paren' => Token::class, 'arguments' => 'array'],
+            'Get' => ['object' => Expr::class, 'name' => Token::class],
             'Grouping' => ['expression' => Expr::class],
             'Literal' => ['value' => 'mixed'],
+            'Logical' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
+            'Set' => ['object' => Expr::class, 'name' => Token::class, 'value' => Expr::class],
             'Unary' => ['operator' => Token::class, 'right' => Expr::class],
             'Variable' => ['name' => Token::class],
-            'Assign' => ['name' => Token::class, 'value' => Expr::class],
-            'Logical' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
-            'Call' => ['callee' => Expr::class, 'paren' => Token::class, 'arguments' => 'array'],
         ],
         'Stmt' => [
-            'Expression' => ['expression' => Expr::class],
-            // print is a reserved keyword in PHP
-            'PloxPrint' => ['expression' => Expr::class],
-            // var is a reserved keyword in PHP
-            'PloxVar' => ['name' => Token::class, 'initializer' => Expr::class . '|null'],
             'Block' => ['statements' => 'array'],
-            // if is a reserved keyword in PHP
-            'PloxIf' => ['condition' => Expr::class, 'thenBranch' => Stmt::class, 'elseBranch' => Stmt::class . '|null'],
-            'PloxWhile' => ['condition' => Expr::class, 'body' => Stmt::class],
+            'Expression' => ['expression' => Expr::class],
             'PloxBreak' => ['keyword' => Token::class],
-            'PloxFunction' => ['name' => Token::class, 'params' => 'array', 'body' => 'array'],
-            'PloxReturn' => ['keyword' => Token::class, 'value' => Expr::class . '|null'],
             'PloxClass' => ['name' => Token::class, 'methods' => 'array'],
+            'PloxFunction' => ['name' => Token::class, 'params' => 'array', 'body' => 'array'],
+            'PloxIf' => ['condition' => Expr::class, 'thenBranch' => Stmt::class, 'elseBranch' => Stmt::class . '|null'],
+            'PloxPrint' => ['expression' => Expr::class],
+            'PloxReturn' => ['keyword' => Token::class, 'value' => Expr::class . '|null'],
+            'PloxVar' => ['name' => Token::class, 'initializer' => Expr::class . '|null'],
+            'PloxWhile' => ['condition' => Expr::class, 'body' => Stmt::class],
         ],
     ];
 

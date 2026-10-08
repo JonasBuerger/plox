@@ -10,6 +10,10 @@ class RuntimeClass implements PloxCallable
 {
     public function __construct(
         public readonly string $name,
+        /**
+         * @var list<RuntimeFunction>
+         */
+        public readonly array $methods,
     ) {
     }
 
