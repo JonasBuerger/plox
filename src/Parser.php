@@ -112,6 +112,12 @@ final class Parser
     private function classDeclaration(): Statement\PloxClass
     {
         $name = $this->consume(TokenType::IDENTIFIER, 'Expect class name.');
+
+        $superClass = null;
+        if ($this->match(TokenType::LESS)) {
+            $superClass = new Expression\Variable($this->consume(TokenType::IDENTIFIER, "Expect superclass name after '<'."));
+        }
+
         $this->consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
 
         $methods = [];
@@ -121,7 +127,7 @@ final class Parser
 
         $this->consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
 
-        return new Statement\PloxClass($name, $methods);
+        return new Statement\PloxClass($name, $superClass, $methods);
     }
 
     private function comparison(): Expr
@@ -346,35 +352,6 @@ final class Parser
         return $this->tokens[$this->current - 1];
     }
 
-    //    private function call(): Expression
-    //    {
-    //        $expression = $this->primary();
-    //        if ($this->match(TokenType::LEFT_PAREN)) {
-    //            $arguments = [];
-    //            if (!$this->check(TokenType::RIGHT_PAREN)) {
-    //                $arguments = $this->arguments();
-    //            }
-    //            $this->consume(TokenType::RIGHT_PAREN, "Missing ')' after argument list.");
-    //
-    //            $expression = new Call($expression, $this->previous(), $arguments);
-    //        }
-    //
-    //        return $expression;
-    //    }
-    //
-    //    /**
-    //     * @return list<Ast\Node\Expression>
-    //     */
-    //    private function arguments(): array
-    //    {
-    //        $expressions = [$this->expression()];
-    //        while ($this->match(TokenType::COMMA)) {
-    //            $expressions[] = $this->expression();
-    //        }
-    //
-    //        return $expressions;
-    //    }
-
     private function primary(): Expr
     {
         if ($this->match(TokenType::FALSE)) {
@@ -388,6 +365,13 @@ final class Parser
         }
         if ($this->match(TokenType::NUMBER, TokenType::STRING)) {
             return new Expression\Literal($this->previous()->literal);
+        }
+        if ($this->match(TokenType::SUPER)) {
+            $keyword = $this->previous();
+            $this->consume(TokenType::DOT, "Expect '.' after 'super'.");
+            $method = $this->consume(TokenType::IDENTIFIER, 'Expect superclass method name.');
+
+            return new Expression\Super($keyword, $method);
         }
         if ($this->match(TokenType::THIS)) {
             return new Expression\PloxThis($this->previous());

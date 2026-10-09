@@ -6,6 +6,8 @@ use Plox\Ast\Expr;
 use Plox\Ast\ExprVisitor;
 use Plox\Ast\Node\Expr as Expression;
 use Plox\Ast\Node\Expr\Set;
+use Plox\Ast\Node\Expr\Super;
+use Plox\Ast\Node\Expr\Variable;
 use Plox\Ast\Node\Stmt as Statement;
 use Plox\Ast\Stmt;
 use Plox\Ast\StmtVisitor;
@@ -52,7 +54,7 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->resolve($unary->right);
     }
 
-    public function visitVariableExpr(Expression\Variable $variable): void
+    public function visitVariableExpr(Variable $variable): void
     {
         if (!$this->scopes->isEmpty() && ($this->scopes->top()[$variable->name->lexeme] ?? null) === false) {
             Plox::error($variable->name, "Can't read local variable in its own initializer.");
@@ -168,10 +170,21 @@ class Resolver implements ExprVisitor, StmtVisitor
         $this->currentClass = ClassType::IN_CLASS;
         $this->declare($ploxClass->name);
         $this->define($ploxClass->name);
+
+        if ($ploxClass->superclass instanceof Variable) {
+            if ($ploxClass->name->lexeme === $ploxClass->superclass->name->lexeme) {
+                Plox::error($ploxClass->superclass->name, "A class can't inherit from itself.");
+            }
+            $this->currentClass = ClassType::IN_SUBCLASS;
+            $this->resolve($ploxClass->superclass);
+
+            $this->beginScope();
+            $this->putInScope('super', true);
+        }
+
         $this->beginScope();
-        $scope = $this->scopes->pop();
-        $scope['this'] = true;
-        $this->scopes->push($scope);
+
+        $this->putInScope('this', true);
 
         foreach ($ploxClass->methods as $method) {
             /**
@@ -181,6 +194,9 @@ class Resolver implements ExprVisitor, StmtVisitor
             $this->resolveFunction($method, $type);
         }
         $this->endScope();
+        if ($ploxClass->superclass instanceof Variable) {
+            $this->endScope();
+        }
         $this->currentClass = $enclosingClass;
     }
 
@@ -193,6 +209,16 @@ class Resolver implements ExprVisitor, StmtVisitor
     {
         $this->resolve($set->value);
         $this->resolve($set->object);
+    }
+
+    public function visitSuperExpr(Super $super): void
+    {
+        if ($this->currentClass === ClassType::NONE) {
+            Plox::error($super->keyword, "Can't use 'super' outside of a class.");
+        } elseif ($this->currentClass !== ClassType::IN_SUBCLASS) {
+            Plox::error($super->keyword, "Can't use 'super' in a class with no superclass.");
+        }
+        $this->resolveLocal($super, $super->keyword);
     }
 
     public function visitPloxThisExpr(Expression\PloxThis $ploxThis): void
@@ -222,9 +248,7 @@ class Resolver implements ExprVisitor, StmtVisitor
         if (array_key_exists($name->lexeme, $this->scopes->top())) {
             Plox::error($name, 'Already a variable with this name in this scope.');
         }
-        $scope = $this->scopes->pop();
-        $scope[$name->lexeme] = false;
-        $this->scopes->push($scope);
+        $this->putInScope($name->lexeme, false);
     }
 
     private function define(Token $name): void
@@ -232,9 +256,7 @@ class Resolver implements ExprVisitor, StmtVisitor
         if ($this->scopes->isEmpty()) {
             return;
         }
-        $scope = $this->scopes->pop();
-        $scope[$name->lexeme] = true;
-        $this->scopes->push($scope);
+        $this->putInScope($name->lexeme, true);
     }
 
     private function resolve(Stmt|Expr $statement): void
@@ -245,6 +267,13 @@ class Resolver implements ExprVisitor, StmtVisitor
     private function beginScope(): void
     {
         $this->scopes->push([]);
+    }
+
+    private function putInScope(string $name, bool $isDefined): void
+    {
+        $scope = $this->scopes->pop();
+        $scope[$name] = $isDefined;
+        $this->scopes->push($scope);
     }
 
     private function endScope(): void

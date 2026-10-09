@@ -6,14 +6,15 @@ namespace Plox;
 
 use Plox\Ast\Visitor\Interpreter;
 
-class RuntimeClass implements PloxCallable
+readonly class RuntimeClass implements PloxCallable
 {
     public function __construct(
-        public readonly string $name,
+        public string $name,
+        public ?RuntimeClass $superclass,
         /**
          * @var list<RuntimeFunction>
          */
-        public readonly array $methods,
+        private array $methods,
     ) {
     }
 
@@ -24,19 +25,23 @@ class RuntimeClass implements PloxCallable
 
     public function arity(): int
     {
-        if (array_key_exists('init', $this->methods)) {
-            return $this->methods['init']->arity();
+        return $this->findMethod('init')?->arity() ?? 0;
+    }
+
+    public function findMethod(string $name): ?RuntimeFunction
+    {
+        if (array_key_exists($name, $this->methods)) {
+            return $this->methods[$name];
         }
 
-        return 0;
+        return $this->superclass?->findMethod($name);
     }
 
     public function call(Interpreter $interpreter, array $arguments): mixed
     {
         $instance = new Instance($this);
-        if (array_key_exists('init', $this->methods)) {
-            $initializer = $this->methods['init']->bind($instance);
-            $initializer->call($interpreter, $arguments);
+        if (($initializer = $this->findMethod('init')) instanceof RuntimeFunction) {
+            $initializer->bind($instance)->call($interpreter, $arguments);
         }
 
         return $instance;

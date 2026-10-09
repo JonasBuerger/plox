@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Plox;
 
 use Plox\Ast\Expr;
+use Plox\Ast\Node\Expr as Expression;
 use Plox\Ast\Stmt;
 
 class Generator
@@ -22,6 +23,7 @@ class Generator
             'Literal' => ['value' => 'mixed'],
             'Logical' => ['left' => Expr::class, 'operator' => Token::class, 'right' => Expr::class],
             'Set' => ['object' => Expr::class, 'name' => Token::class, 'value' => Expr::class],
+            'Super' => ['keyword' => Token::class, 'method' => Token::class],
             'PloxThis' => ['keyword' => Token::class],
             'Unary' => ['operator' => Token::class, 'right' => Expr::class],
             'Variable' => ['name' => Token::class],
@@ -30,7 +32,7 @@ class Generator
             'Block' => ['statements' => 'array'],
             'Expression' => ['expression' => Expr::class],
             'PloxBreak' => ['keyword' => Token::class],
-            'PloxClass' => ['name' => Token::class, 'methods' => 'array'],
+            'PloxClass' => ['name' => Token::class, 'superclass' => Expression\Variable::class . '|null', 'methods' => 'array'],
             'PloxFunction' => ['name' => Token::class, 'params' => 'array', 'body' => 'array'],
             'PloxIf' => ['condition' => Expr::class, 'thenBranch' => Stmt::class, 'elseBranch' => Stmt::class . '|null'],
             'PloxPrint' => ['expression' => Expr::class],

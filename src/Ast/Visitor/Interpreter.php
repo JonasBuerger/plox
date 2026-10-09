@@ -8,6 +8,8 @@ use Plox\Ast\ExprVisitor;
 use Plox\Ast\Node\Expr as Expression;
 use Plox\Ast\Node\Expr\Get;
 use Plox\Ast\Node\Expr\Set;
+use Plox\Ast\Node\Expr\Super;
+use Plox\Ast\Node\Expr\Variable;
 use Plox\Ast\Node\Stmt as Statement;
 use Plox\Ast\Stmt;
 use Plox\Ast\StmtVisitor;
@@ -156,7 +158,7 @@ class Interpreter implements ExprVisitor, StmtVisitor
     }
 
     #[Override]
-    public function visitVariableExpr(Expression\Variable $variable): mixed
+    public function visitVariableExpr(Variable $variable): mixed
     {
         return $this->lookupVariable($variable->name, $variable);
     }
@@ -234,6 +236,26 @@ class Interpreter implements ExprVisitor, StmtVisitor
         $object->set($set->name, $value);
 
         return $value;
+    }
+
+    #[Override]
+    public function visitSuperExpr(Super $super): RuntimeFunction
+    {
+        $distance = $this->locals[spl_object_id($super)] ?? null;
+        /**
+         * @var RuntimeClass $superclass
+         */
+        $superclass = $this->environment->getAt($distance, 'super');
+        /**
+         * @var Instance $object
+         */
+        $object = $this->environment->getAt($distance - 1, 'this');
+        $method = $superclass->findMethod($super->method->lexeme);
+        if ($method === null) {
+            throw new RuntimeException($super->method, "Undefined property '" . $super->method->lexeme . "'.");
+        }
+
+        return $method->bind($object);
     }
 
     #[Override]
@@ -340,7 +362,20 @@ class Interpreter implements ExprVisitor, StmtVisitor
     #[Override]
     public function visitPloxClassStmt(Statement\PloxClass $ploxClass): void
     {
+        $superclass = null;
+        $previousEnvironment = null;
+        if ($ploxClass->superclass instanceof Variable) {
+            $superclass = $this->evaluate($ploxClass->superclass);
+            if (!$superclass instanceof RuntimeClass) {
+                throw new RuntimeException($ploxClass->superclass->name, 'Superclass must be a class.');
+            }
+        }
         $this->environment->define($ploxClass->name->lexeme, null);
+        if ($superclass instanceof RuntimeClass) {
+            $previousEnvironment = $this->environment;
+            $this->environment = new Environment($this->environment);
+            $this->environment->define('super', $superclass);
+        }
         $methods = [];
         foreach ($ploxClass->methods as $method) {
             /**
@@ -349,7 +384,12 @@ class Interpreter implements ExprVisitor, StmtVisitor
             $function = new RuntimeFunction($method, $this->environment, $method->name->lexeme === 'init');
             $methods[$method->name->lexeme] = $function;
         }
-        $class = new RuntimeClass($ploxClass->name->lexeme, $methods);
+
+        if ($previousEnvironment instanceof Environment) {
+            $this->environment = $previousEnvironment;
+        }
+
+        $class = new RuntimeClass($ploxClass->name->lexeme, $superclass, $methods);
         $this->environment->assign($ploxClass->name, $class);
     }
 

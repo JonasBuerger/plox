@@ -13,6 +13,7 @@ use Plox\Ast\Node\Expr\Literal;
 use Plox\Ast\Node\Expr\Logical;
 use Plox\Ast\Node\Expr\PloxThis;
 use Plox\Ast\Node\Expr\Set;
+use Plox\Ast\Node\Expr\Super;
 use Plox\Ast\Node\Expr\Unary;
 use Plox\Ast\Node\Expr\Variable;
 
@@ -60,6 +61,11 @@ interface ExprVisitor
      * @return T
      */
     public function visitSetExpr(Set $set);
+
+    /**
+     * @return T
+     */
+    public function visitSuperExpr(Super $super);
 
     /**
      * @return T

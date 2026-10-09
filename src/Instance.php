@@ -24,8 +24,8 @@ class Instance implements Stringable
         if (array_key_exists($name->lexeme, $this->fields)) {
             return $this->fields[$name->lexeme];
         }
-        if (array_key_exists($name->lexeme, $this->class->methods)) {
-            return $this->class->methods[$name->lexeme]->bind($this);
+        if (($method = $this->class->findMethod($name->lexeme)) instanceof RuntimeFunction) {
+            return $method->bind($this);
         }
 
         throw new RuntimeException($name, "Undefined property '" . $name->lexeme . "'.");
